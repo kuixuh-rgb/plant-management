@@ -185,6 +185,26 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
 .two-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px}.danger{background:#fff1f1!important;color:#a22525!important;border-color:#f0cccc!important}
 @media(max-width:1100px){.data-layout{grid-template-columns:1fr}}
 @media(max-width:760px){.chat-compose{grid-template-columns:1fr}.two-btn{grid-template-columns:1fr}.chat-shell{min-height:540px}.chat-messages{max-height:430px}}
+
+.weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.weather-metric{padding:12px;border:1px solid var(--line);border-radius:14px;background:#f8fbf7}
+.weather-metric span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.weather-metric b{font-size:20px}
+.location-box{padding:12px;border-radius:14px;background:#eef8ef;border:1px solid #d7ead9;margin-top:12px}
+.cn-result{margin-top:12px;padding:14px;border-radius:14px;background:#fff8e8;border:1px solid #f1dfb3}
+.cn-result strong{font-size:26px}
+.cn-result.good{background:#eef8ef;border-color:#b9ddc0}
+.cn-result.warn{background:#fff8e8;border-color:#f1dfb3}
+.cn-result.bad{background:#fff0f0;border-color:#efc4c4}
+.cn-status{font-weight:900;margin-top:8px}
+.cn-scale{height:10px;border-radius:999px;background:linear-gradient(90deg,#f3d0d0 0 25%,#f2dfaa 25% 40%,#bfe0c3 40% 60%,#f2dfaa 60% 75%,#f3d0d0 75% 100%);margin-top:12px;position:relative}
+.cn-pointer{position:absolute;top:-5px;width:4px;height:20px;border-radius:999px;background:#253327;transform:translateX(-50%);display:none}
+.inline-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:760px){
+  .weather-grid{grid-template-columns:1fr}
+  .inline-actions .btn{width:100%}
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -205,7 +225,7 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
       <button class="navbtn" data-go="logs"><span>💧</span>照顧紀錄</button>
       <button class="navbtn" data-go="import"><span>📥</span>資料匯入</button>
       <button class="navbtn" data-go="qr"><span>📱</span>QR Code</button>
-      <button class="navbtn" data-go="ai"><span>🤖</span>Gemini 管家</button>
+      <button class="navbtn" data-go="ai"><span>🎙️</span>語音查詢</button>
     </div>
     <div class="side-note">
       <b>智慧操作</b><br>
@@ -227,13 +247,13 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
         <div class="hero">
           <div>今天也一起照顧植物吧 🌱</div>
           <h2>每一株植物，都有自己的身分與生命週期</h2>
-          <p>用唯一編號、位置、繁殖家族、QR Code 與 AI 管理大量植物。</p>
+          <p>用唯一編號、位置、繁殖家族、QR Code 與語音查詢管理大量植物。</p>
           <div class="tags"><span class="tag">價格</span><span class="tag">狀態</span><span class="tag">位置</span><span class="tag">繁殖</span><span class="tag">QR</span><span class="tag">AI</span></div>
         </div>
 
         <div class="quick-grid">
           <button class="quick" data-go="qr"><span class="icon">📱</span>掃花盆</button>
-          <button class="quick" data-go="ai"><span class="icon">🤖</span>跟 AI 對話</button>
+          <button class="quick" data-go="ai"><span class="icon">🎙️</span>語音查詢</button>
           <button id="goAdd" class="quick"><span class="icon">➕</span>新增植物</button>
           <button class="quick" data-go="plants"><span class="icon">🔎</span>搜尋植物</button>
           <button class="quick" data-go="family"><span class="icon">🧬</span>家族關係</button>
@@ -260,6 +280,43 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
             </div>
             <div id="reminderSummary" class="muted">依每株植物設定的澆水／施肥週期自動計算。</div>
             <div id="reminderList"></div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid" style="margin-top:16px">
+          <div class="card">
+            <div class="section-title">
+              <h3>🌦️ 目前定位＋今日天氣</h3>
+              <span class="badge">GPS 即時</span>
+            </div>
+            <p class="muted">按下定位後，瀏覽器會詢問位置權限，並依 GPS 座標取得今日降雨機率與目前濕度。</p>
+
+            <div class="inline-actions">
+              <button id="locateNowBtn" class="btn primary" type="button">📍 取得目前定位</button>
+              <button id="refreshWeatherBtn" class="btn soft" type="button">🔄 更新天氣</button>
+              <button id="openMapBtn" class="btn" type="button" disabled>🗺️ 在地圖開啟</button>
+            </div>
+
+            <div id="locationStatus" class="location-box">
+              尚未取得定位。請按「取得目前定位」。
+            </div>
+
+            <div class="weather-grid">
+              <div class="weather-metric"><span>🌧️ 今日最高降雨機率</span><b id="rainChance">--%</b></div>
+              <div class="weather-metric"><span>💧 目前相對濕度</span><b id="humidityNow">--%</b></div>
+              <div class="weather-metric"><span>🌡️ 目前氣溫</span><b id="temperatureNow">--°C</b></div>
+            </div>
+            <div id="weatherStatus" class="muted" style="margin-top:10px">等待定位後取得天氣。</div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">
+              <h3>♻️ Excel 碳氮比分析</h3>
+              <span class="badge">自動讀取</span>
+            </div>
+            <p class="muted">碳氮比直接讀取匯入 Excel 的「碳氮比／C:N」欄位，不需要手動輸入。</p>
+            <div id="cnExcelSummary" class="cn-result">尚未匯入含碳氮比的 Excel 資料。</div>
+            <div id="cnExcelList" style="margin-top:12px"></div>
           </div>
         </div>
       </section>
@@ -319,7 +376,7 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
         <div class="data-layout">
           <div class="card">
             <div class="section-title"><h3>📥 Excel／CSV 批次匯入</h3><span class="badge">100+ 筆可用</span></div>
-            <p class="muted">支援 .xlsx、.xls、.csv。先預覽，再確認匯入；同編號會更新，新的編號會新增。</p>
+            <p class="muted">支援 .xlsx、.xls、.csv。建議先下載範本給客戶填寫；匯入時先預覽，再確認。同植物編號會自動更新，新編號會自動新增。</p>
             <label>選擇客戶資料檔</label>
             <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,text/csv">
             <label style="margin-top:10px">匯入方式</label>
@@ -331,9 +388,10 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
             <div id="importStatus" class="notice seed">尚未選擇檔案。</div>
             <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
             <div class="two-btn">
+              <button id="downloadTemplate" class="btn soft" type="button">📄 下載 Excel 範本</button>
               <button id="exportExcel" class="btn" type="button">📤 匯出目前資料</button>
-              <button id="resetDemo" class="btn danger" type="button">↩️ 重設示範資料</button>
             </div>
+            <button id="resetDemo" class="btn danger" style="width:100%;margin-top:10px" type="button">↩️ 重設示範資料</button>
           </div>
           <div class="card">
             <div class="section-title"><h3>資料預覽</h3><span id="previewCount" class="muted">0 筆</span></div>
@@ -361,7 +419,7 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
             <button id="scanImageBtn" class="btn" style="width:100%;margin-top:8px" type="button">🖼️ 辨識圖片 QR</button>
             <button id="simulateScanBtn" class="btn soft" style="width:100%;margin-top:8px" type="button">🧪 報告用：測試掃描所選植物</button>
             <div id="scanResult" class="notice seed">尚未掃描植物。</div>
-            <button class="btn primary" data-go="ai" style="width:100%;margin-top:10px" type="button">🤖 跟 Gemini 詢問這株植物</button>
+            <button class="btn primary" data-go="ai" style="width:100%;margin-top:10px" type="button">🎙️ 用語音查詢這株植物</button>
           </div>
         </div>
       </section>
@@ -370,26 +428,26 @@ label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
         <div class="dashboard-grid" style="grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr)">
           <div class="card chat-shell">
             <div>
-              <div class="section-title"><h3>🤖 Gemini 植物管家</h3><button id="clearChat" class="btn" type="button">清除對話</button></div>
-              <div id="geminiStatus" class="notice seed"><span class="status-dot warn"></span>正在檢查 Gemini 連線…</div>
-              <div id="aiContext" class="notice seed">尚未指定 QR 植物；AI 仍可查詢全部植物資料。</div>
+              <div class="section-title"><h3>🎙️ 語音植物查詢</h3><button id="clearChat" class="btn" type="button">清除紀錄</button></div>
+              <div id="geminiStatus" class="notice seed"><span class="status-dot ok"></span>本機資料查詢已就緒，不需要 API Key。</div>
+              <div id="aiContext" class="notice seed">尚未指定 QR 植物；仍可語音查詢全部植物資料。</div>
             </div>
             <div id="chatMessages" class="chat-messages"></div>
             <form id="geminiChatForm">
               <div class="chat-compose">
                 <div>
-                  <textarea id="geminiInput" placeholder="例如：皇冠 #018 最近要澆水嗎？／我家裡現在有幾株皇冠？／這株目前在哪裡？"></textarea>
-                  <div class="voice-row"><button class="micbtn" id="geminiMic" type="button">🎙️ 點一下開始說話</button><span id="geminiVoiceStatus" class="voice-status">可用中文直接詢問</span></div>
+                  <textarea id="geminiInput" placeholder="例如：皇冠 #018 在哪裡？／我家裡有幾株皇冠？／哪些植物該澆水？"></textarea>
+                  <div class="voice-row"><button class="micbtn" id="geminiMic" type="button">🎙️ 點一下開始說話</button><span id="geminiVoiceStatus" class="voice-status">說完會自動搜尋資料並唸出答案</span></div>
                 </div>
-                <button id="sendGemini" class="btn primary" type="submit">➤ 傳送</button>
+                <button id="sendGemini" class="btn primary" type="submit">🔎 查詢</button>
               </div>
             </form>
           </div>
           <div>
             <div class="card">
-              <h3 style="margin-top:0">🌿 AI 能讀取的植物資料</h3>
+              <h3 style="margin-top:0">🌿 可查詢的植物資料</h3>
               <div id="aiDataSummary" class="notice seed"></div>
-              <p class="muted">Gemini 每次詢問會收到目前植物資料與 QR 指定植物；不會讓 AI 未經確認直接修改資料。</p>
+              <p class="muted">語音查詢直接讀取目前瀏覽器內的植物資料；不會上傳到外部 AI，也不需要 API Key。</p>
             </div>
             <div class="card" style="margin-top:16px">
               <h3 style="margin-top:0">✨ 快速紀錄</h3>
@@ -454,9 +512,9 @@ function loadJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)
 let plants=loadJSON('plantHub.plants',DEFAULT_PLANTS);
 let logs=loadJSON('plantHub.logs',DEFAULT_LOGS);
 let selected=plants[0]?.id||null, scanned=localStorage.getItem('plantHub.scanned')||null, pending=null, importRows=[];
-let chatHistory=loadJSON('plantHub.chat',[]);
+let chatHistory=loadJSON('plantHub.voiceSearch',[]);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-function saveState(){localStorage.setItem('plantHub.plants',JSON.stringify(plants));localStorage.setItem('plantHub.logs',JSON.stringify(logs));localStorage.setItem('plantHub.chat',JSON.stringify(chatHistory.slice(-30)));if(scanned)localStorage.setItem('plantHub.scanned',scanned);else localStorage.removeItem('plantHub.scanned')}
+function saveState(){localStorage.setItem('plantHub.plants',JSON.stringify(plants));localStorage.setItem('plantHub.logs',JSON.stringify(logs));localStorage.setItem('plantHub.voiceSearch',JSON.stringify(chatHistory.slice(-30)));if(scanned)localStorage.setItem('plantHub.scanned',scanned);else localStorage.removeItem('plantHub.scanned')}
 function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400)}
 function show(id){$$('.view').forEach(v=>v.classList.remove('active'));const view=$('#'+id);if(view)view.classList.add('active');$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.go===id));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
 $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
@@ -477,8 +535,178 @@ function renderDetail(){const p=plants.find(x=>x.id===selected)||plants[0];if(!p
 function fillSelects(){const alive=plants.filter(p=>p.status!=='已死亡');const opts=alive.map(p=>`<option value="${esc(p.id)}">${esc(p.id)}</option>`).join('');['motherSelect','qrSelect','logPlant'].forEach(id=>{const el=$('#'+id);if(!el)return;const old=el.value;el.innerHTML=opts;if(alive.some(p=>p.id===old))el.value=old});if(scanned&&$('#qrSelect')&&alive.some(p=>p.id===scanned))$('#qrSelect').value=scanned}
 function renderFamily(){const mothers=plants.filter(p=>plants.some(k=>k.mother===p.id));const root=mothers[0]||plants[0];if(!root){$('#familyTree').innerHTML='<div class="muted">尚無家族資料</div>';return}const kids=plants.filter(p=>p.mother===root.id);$('#familyTree').innerHTML=`<div class="tree-root">🌳<br><b>${esc(root.id)}</b><br><span class="muted">母株</span></div><div style="font-size:24px;margin:8px">↓</div><div class="tree-children">${kids.map(p=>`<div class="tree-child">🌱<br><b>${esc(p.id)}</b><br><span class="muted">${esc(p.status)}</span></div>`).join('')||'<span class="muted">尚無子株</span>'}</div>`}
 function renderLogs(){const el=$('#logList');if(el)el.innerHTML=logs.slice(0,100).map(l=>`<div class="log card" style="box-shadow:none"><div class="row"><b>${l.action==='澆水'?'💧':l.action==='施肥'?'🧪':'🪴'} ${esc(l.action)}</b><span class="muted">${esc(l.date)}</span></div><div style="margin-top:4px">${esc(l.plant)}</div><div class="muted">${esc(l.note)}</div></div>`).join('')||'<div class="muted">尚無紀錄</div>'}
-function renderAIContext(){const p=plants.find(x=>x.id===scanned);$('#aiContext').innerHTML=p?`✅ QR 已指定：<b>${esc(p.id)}</b><br><span class="muted">Gemini 會優先以這株植物回答「它／這株」的問題。</span>`:`目前共有 <b>${plants.length}</b> 株植物。尚未掃描 QR，Gemini 仍可查詢全部植物資料。`;$('#aiDataSummary').innerHTML=`📚 植物：<b>${plants.length}</b> 株<br>💧 照顧紀錄：<b>${logs.length}</b> 筆<br>📱 QR 指定：<b>${esc(scanned||'無')}</b>`}
-function renderAll(){renderStats();renderPlants();renderDetail();fillSelects();renderFamily();renderLogs();renderReminders();renderAIContext();renderChat();saveState()}
+function renderAIContext(){const p=plants.find(x=>x.id===scanned);$('#aiContext').innerHTML=p?`✅ QR 已指定：<b>${esc(p.id)}</b><br><span class="muted">說「它／這株」時會直接查這株植物。</span>`:`目前共有 <b>${plants.length}</b> 株植物。尚未掃描 QR，仍可查詢全部植物資料。`;$('#aiDataSummary').innerHTML=`📚 植物：<b>${plants.length}</b> 株<br>💧 照顧紀錄：<b>${logs.length}</b> 筆<br>📱 QR 指定：<b>${esc(scanned||'無')}</b>`}
+
+// ---------- 定位＋天氣 ----------
+let currentGeo = (() => {
+  try { return JSON.parse(localStorage.getItem('plantHub.geo') || 'null'); }
+  catch { return null; }
+})();
+
+function setWeatherStatus(text, isError=false){
+  const el=$('#weatherStatus');
+  if(!el)return;
+  el.textContent=text;
+  el.style.color=isError?'#b42318':'';
+}
+
+function renderGeo(){
+  const box=$('#locationStatus');
+  const mapBtn=$('#openMapBtn');
+  if(!box)return;
+  if(!currentGeo){
+    box.innerHTML='尚未取得定位。請按「取得目前定位」。';
+    if(mapBtn)mapBtn.disabled=true;
+    return;
+  }
+  box.innerHTML=`📍 緯度：<b>${Number(currentGeo.lat).toFixed(5)}</b><br>📍 經度：<b>${Number(currentGeo.lon).toFixed(5)}</b><br><span class="muted">定位時間：${esc(currentGeo.time||'剛剛')}</span>`;
+  if(mapBtn)mapBtn.disabled=false;
+}
+
+async function loadWeatherForCoords(lat,lon){
+  setWeatherStatus('正在取得今日天氣…');
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=temperature_2m,relative_humidity_2m&daily=precipitation_probability_max&timezone=auto&forecast_days=1`;
+    const r=await fetch(url,{cache:'no-store'});
+    if(!r.ok)throw new Error('天氣服務回應 '+r.status);
+    const data=await r.json();
+
+    const rain=data?.daily?.precipitation_probability_max?.[0];
+    const hum=data?.current?.relative_humidity_2m;
+    const temp=data?.current?.temperature_2m;
+
+    $('#rainChance').textContent=Number.isFinite(Number(rain))?`${Math.round(Number(rain))}%`:'--%';
+    $('#humidityNow').textContent=Number.isFinite(Number(hum))?`${Math.round(Number(hum))}%`:'--%';
+    $('#temperatureNow').textContent=Number.isFinite(Number(temp))?`${Number(temp).toFixed(1)}°C`:'--°C';
+
+    const stamp=data?.current?.time ? String(data.current.time).replace('T',' ') : '剛剛';
+    setWeatherStatus(`✅ 天氣已更新｜資料時間：${stamp}`);
+  }catch(err){
+    console.error(err);
+    setWeatherStatus('⚠️ 天氣取得失敗，請確認網路後再按「更新天氣」。',true);
+  }
+}
+
+function getCurrentLocationAndWeather(){
+  if(!navigator.geolocation){
+    $('#locationStatus').textContent='此瀏覽器不支援定位功能。';
+    return;
+  }
+  const btn=$('#locateNowBtn');
+  if(btn){btn.disabled=true;btn.textContent='📍 定位中…'}
+  setWeatherStatus('等待 GPS 定位…');
+
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      currentGeo={
+        lat:pos.coords.latitude,
+        lon:pos.coords.longitude,
+        accuracy:pos.coords.accuracy,
+        time:new Date().toLocaleString('zh-TW')
+      };
+      localStorage.setItem('plantHub.geo',JSON.stringify(currentGeo));
+      renderGeo();
+      loadWeatherForCoords(currentGeo.lat,currentGeo.lon);
+      if(btn){btn.disabled=false;btn.textContent='📍 重新取得定位'}
+      toast('定位成功');
+    },
+    err=>{
+      const msg={
+        1:'定位權限被拒絕，請允許網站取得位置。',
+        2:'目前無法取得位置，請確認裝置定位功能。',
+        3:'定位逾時，請再試一次。'
+      }[err.code] || '定位失敗，請再試一次。';
+      $('#locationStatus').textContent='⚠️ '+msg;
+      setWeatherStatus('尚未取得定位，因此無法更新天氣。',true);
+      if(btn){btn.disabled=false;btn.textContent='📍 取得目前定位'}
+    },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:300000}
+  );
+}
+
+$('#locateNowBtn')?.addEventListener('click',getCurrentLocationAndWeather);
+$('#refreshWeatherBtn')?.addEventListener('click',()=>{
+  if(currentGeo)loadWeatherForCoords(currentGeo.lat,currentGeo.lon);
+  else getCurrentLocationAndWeather();
+});
+$('#openMapBtn')?.addEventListener('click',()=>{
+  if(!currentGeo)return;
+  window.open(`https://www.google.com/maps?q=${encodeURIComponent(currentGeo.lat+','+currentGeo.lon)}`,'_blank','noopener');
+});
+
+// ---------- Excel 碳氮比分析 ----------
+function parseCnRatio(value){
+  if(value===null||value===undefined||value==='')return null;
+  if(typeof value==='number'&&Number.isFinite(value))return value;
+  const s=String(value).trim().replace(/\s/g,'');
+  const pair=s.match(/(\d+(?:\.\d+)?)\s*[:\/]\s*(\d+(?:\.\d+)?)/);
+  if(pair){const c=Number(pair[1]),n=Number(pair[2]);return n>0?c/n:null;}
+  const m=s.match(/\d+(?:\.\d+)?/);return m?Number(m[0]):null;
+}
+function cnBand(r){
+  if(r===null||!Number.isFinite(r))return {label:'未提供',group:'missing'};
+  if(r>=25&&r<=30)return {label:'✅ 符合最佳範圍',group:'optimal'};
+  if(r>=20&&r<=40)return {label:r<25?'🟡 可接受但偏低':'🟡 可接受但偏高',group:'acceptable'};
+  return {label:r<20?'🔴 低於建議範圍':'🔴 高於建議範圍',group:'out'};
+}
+function formatCn(r){if(r===null||!Number.isFinite(r))return '—';return `${(r>=100?r.toFixed(0):r.toFixed(1).replace(/\.0$/,''))}:1`;}
+function renderCnExcelSummary(){
+  const summary=$('#cnExcelSummary'),list=$('#cnExcelList');if(!summary||!list)return;
+  const rows=plants.map(p=>({p,ratio:parseCnRatio(p.cnRatio??'')})).filter(x=>x.ratio!==null);
+  if(!rows.length){summary.className='cn-result';summary.innerHTML='尚未讀到碳氮比資料。<br><span class="muted">Excel 欄位可使用「碳氮比」、「C:N」、「C/N」、「CN比」、「CN比例」或「碳氮比例」。</span>';list.innerHTML='';return;}
+  const best=rows.filter(x=>cnBand(x.ratio).group==='optimal').length;
+  const ok=rows.filter(x=>cnBand(x.ratio).group==='acceptable').length;
+  const out=rows.filter(x=>cnBand(x.ratio).group==='out').length;
+  summary.innerHTML=`<div>已讀取 <strong>${rows.length}</strong> 筆碳氮比資料</div><div style="margin-top:8px">最佳範圍：<b>25:1～30:1</b></div><div class="muted">一般可接受範圍：約 20:1～40:1</div><div class="weather-grid" style="margin-top:12px"><div class="weather-metric"><span>✅ 最佳範圍</span><b>${best} 筆</b></div><div class="weather-metric"><span>🟡 可接受</span><b>${ok} 筆</b></div><div class="weather-metric"><span>🔴 超出範圍</span><b>${out} 筆</b></div></div>`;
+  list.innerHTML=rows.slice(0,20).map(({p,ratio})=>`<div class="notice seed" style="margin-top:8px"><b>${esc(p.id)} ${esc(p.name||'')}</b><br>C:N：<b>${formatCn(ratio)}</b>｜${cnBand(ratio).label}</div>`).join('');
+}
+
+// ---------- Excel 範本 ----------
+$('#downloadTemplate')?.addEventListener('click',()=>{
+  if(typeof XLSX==='undefined'){
+    toast('Excel 元件尚未載入，請稍後再試');
+    return;
+  }
+  const rows=[{
+    '植物編號':'皇冠 #001',
+    '名稱':'皇冠',
+    '品種':'範例品種',
+    '狀態':'持有',
+    '來源':'購入',
+    '原始購入價格':3000,
+    '碳氮比':'30:1',
+    '主要地點':'家裡',
+    '區域':'騎樓',
+    '具體位置':'左架',
+    '盆器':'5吋盆',
+    '母株':'',
+    '澆水週期':4,
+    '施肥週期':14,
+    '上次澆水':TODAY,
+    '上次施肥':TODAY,
+    '購入日期':TODAY,
+    '賣家':'',
+    '備註':''
+  }];
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[
+    {wch:16},{wch:12},{wch:16},{wch:12},{wch:12},{wch:14},
+    {wch:12},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},
+    {wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:24}
+  ];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'植物資料');
+  XLSX.writeFile(wb,'植物資料匯入範本.xlsx');
+  toast('已下載 Excel 範本');
+});
+
+renderGeo();
+if(currentGeo){
+  // Page refresh can reuse last coordinates; weather only refreshes when user asks.
+  setWeatherStatus('已保留上次定位，可按「更新天氣」。');
+}
+
+function renderAll(){renderStats();renderPlants();renderDetail();fillSelects();renderFamily();renderLogs();renderReminders();renderAIContext();renderChat();renderCnExcelSummary();saveState()}
 $('#search')?.addEventListener('input',renderPlants);$('#statusFilter')?.addEventListener('change',renderPlants);
 function nextPlantId(name){let max=0;plants.filter(p=>p.name===name).forEach(p=>{const m=String(p.id).match(/#\s*(\d+)/);if(m)max=Math.max(max,+m[1])});return `${name} #${String(max+1).padStart(3,'0')}`}
 $('#addForm')?.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget),name=String(f.get('name')||'').trim(),variety=String(f.get('variety')||'').trim();if(!name||!variety)return toast('請填寫名稱與品種');const source=f.get('source'),id=nextPlantId(name);plants.push({id,name,variety,source,price:source==='自行繁殖'?0:Math.max(0,Number(f.get('price'))||0),status:f.get('status'),loc:[f.get('l1'),f.get('l2')||'未設定區域',f.get('l3')||'未設定位置'],pot:'未設定',days:0,mother:null,risk:false,waterEvery:4,fertEvery:14,lastWater:TODAY,lastFert:TODAY});e.currentTarget.reset();selected=id;renderAll();toast('已建立 '+id);show('plants')});
@@ -489,11 +717,11 @@ $('#logForm')?.addEventListener('submit',e=>{e.preventDefault();const pid=$('#lo
 function normKey(s){return String(s??'').trim().replace(/[\s_\-()（）]/g,'').toLowerCase()}
 function cell(row,aliases){const keys=Object.keys(row);for(const alias of aliases){const target=normKey(alias);const k=keys.find(x=>normKey(x)===target);if(k!==undefined&&row[k]!==undefined&&row[k]!==null&&String(row[k]).trim()!=='')return row[k]}return ''}
 function excelDate(v){if(!v)return '';if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}const s=String(v).trim().replace(/[/.]/g,'-');const d=new Date(s);if(!Number.isNaN(d.getTime()))return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return ''}
-function normalizeImportedRow(r,index){let name=String(cell(r,['名稱','植物名稱','品名','name'])||'').trim();let id=String(cell(r,['植物編號','編號','唯一編號','ID','id'])||'').trim();if(!name&&id)name=id.split('#')[0].trim();if(!name)return null;if(!id)id=nextPlantId(name);const source=String(cell(r,['來源','取得方式','source'])||'購入').trim();let loc1=String(cell(r,['主要地點','地點','位置一','location1','location'])||'未設定').trim(),loc2=String(cell(r,['區域','位置二','location2'])||'未設定區域').trim(),loc3=String(cell(r,['具體位置','位置三','location3'])||'未設定位置').trim();const combined=String(cell(r,['目前位置','完整位置'])||'').trim();if(combined){const a=combined.split(/\s*[＞>\/｜|]\s*/);loc1=a[0]||loc1;loc2=a[1]||loc2;loc3=a[2]||loc3}const purchaseDate=excelDate(cell(r,['購入日期','購買日期','建立日期','purchaseDate']));let days=Number(cell(r,['持有天數','天數','days']))||0;if(!days&&purchaseDate){const d=diffDays(purchaseDate,TODAY);days=d===null?0:Math.max(0,d)}return {id,name,variety:String(cell(r,['品種','學名','variety'])||'未設定').trim(),source,price:source==='自行繁殖'?0:Math.max(0,Number(cell(r,['原始購入價格','購入價格','購買價格','價格','price']))||0),expectedPrice:Math.max(0,Number(cell(r,['預計出售價格','預售價格','expectedPrice']))||0),actualPrice:Math.max(0,Number(cell(r,['實際出售價格','售價','actualPrice']))||0),status:String(cell(r,['狀態','status'])||'持有').trim(),loc:[loc1,loc2,loc3],pot:String(cell(r,['盆器','盆徑','花盆','pot'])||'未設定').trim(),days,mother:String(cell(r,['母株','母株編號','mother'])||'').trim()||null,risk:/^(1|true|是|有|高)$/i.test(String(cell(r,['高風險','風險','risk']))),waterEvery:Math.max(1,Number(cell(r,['澆水週期','幾天澆水一次','waterEvery']))||4),fertEvery:Math.max(1,Number(cell(r,['施肥週期','幾天施肥一次','fertEvery']))||14),lastWater:excelDate(cell(r,['上次澆水','最後澆水','lastWater']))||TODAY,lastFert:excelDate(cell(r,['上次施肥','最後施肥','lastFert']))||TODAY,purchaseDate,seller:String(cell(r,['賣家','購買來源','seller'])||'').trim(),notes:String(cell(r,['備註','notes'])||'').trim()}}
+function normalizeImportedRow(r,index){let name=String(cell(r,['名稱','植物名稱','品名','name'])||'').trim();let id=String(cell(r,['植物編號','編號','唯一編號','ID','id'])||'').trim();if(!name&&id)name=id.split('#')[0].trim();if(!name)return null;if(!id)id=nextPlantId(name);const source=String(cell(r,['來源','取得方式','source'])||'購入').trim();let loc1=String(cell(r,['主要地點','地點','位置一','location1','location'])||'未設定').trim(),loc2=String(cell(r,['區域','位置二','location2'])||'未設定區域').trim(),loc3=String(cell(r,['具體位置','位置三','location3'])||'未設定位置').trim();const combined=String(cell(r,['目前位置','完整位置'])||'').trim();if(combined){const a=combined.split(/\s*[＞>\/｜|]\s*/);loc1=a[0]||loc1;loc2=a[1]||loc2;loc3=a[2]||loc3}const purchaseDate=excelDate(cell(r,['購入日期','購買日期','建立日期','purchaseDate']));let days=Number(cell(r,['持有天數','天數','days']))||0;if(!days&&purchaseDate){const d=diffDays(purchaseDate,TODAY);days=d===null?0:Math.max(0,d)}return {id,name,variety:String(cell(r,['品種','學名','variety'])||'未設定').trim(),source,price:source==='自行繁殖'?0:Math.max(0,Number(cell(r,['原始購入價格','購入價格','購買價格','價格','price']))||0),cnRatio:String(cell(r,['碳氮比','C:N','C／N','C/N','CN比','CN比例','碳氮比例','carbonNitrogenRatio','cnRatio'])||'').trim(),expectedPrice:Math.max(0,Number(cell(r,['預計出售價格','預售價格','expectedPrice']))||0),actualPrice:Math.max(0,Number(cell(r,['實際出售價格','售價','actualPrice']))||0),status:String(cell(r,['狀態','status'])||'持有').trim(),loc:[loc1,loc2,loc3],pot:String(cell(r,['盆器','盆徑','花盆','pot'])||'未設定').trim(),days,mother:String(cell(r,['母株','母株編號','mother'])||'').trim()||null,risk:/^(1|true|是|有|高)$/i.test(String(cell(r,['高風險','風險','risk']))),waterEvery:Math.max(1,Number(cell(r,['澆水週期','幾天澆水一次','waterEvery']))||4),fertEvery:Math.max(1,Number(cell(r,['施肥週期','幾天施肥一次','fertEvery']))||14),lastWater:excelDate(cell(r,['上次澆水','最後澆水','lastWater']))||TODAY,lastFert:excelDate(cell(r,['上次施肥','最後施肥','lastFert']))||TODAY,purchaseDate,seller:String(cell(r,['賣家','購買來源','seller'])||'').trim(),notes:String(cell(r,['備註','notes'])||'').trim()}}
 async function readExcelPreview(){const file=$('#excelFile').files?.[0];if(!file)return toast('請先選擇 Excel 或 CSV');if(!window.XLSX){$('#importStatus').textContent='❌ Excel 元件載入失敗，請確認網路後重新整理。';return}try{const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:'array',cellDates:false}),ws=wb.Sheets[wb.SheetNames[0]],raw=XLSX.utils.sheet_to_json(ws,{defval:''});importRows=raw.map(normalizeImportedRow).filter(Boolean);$('#previewCount').textContent=`${importRows.length} 筆`;$('#importStatus').innerHTML=`✅ 已讀取 <b>${esc(file.name)}</b>，共 ${importRows.length} 筆有效植物資料。`;const rows=importRows.slice(0,12);$('#excelPreview').innerHTML=rows.length?`<table class="preview-table"><thead><tr><th>ID</th><th>名稱</th><th>品種</th><th>狀態</th><th>位置</th><th>價格</th></tr></thead><tbody>${rows.map(p=>`<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.variety)}</td><td>${esc(p.status)}</td><td>${esc(p.loc.join('＞'))}</td><td>${p.price}</td></tr>`).join('')}</tbody></table>${importRows.length>12?`<div class="muted" style="margin-top:8px">僅預覽前 12 筆；匯入時會處理全部 ${importRows.length} 筆。</div>`:''}`:'<div class="notice warn">沒有找到有效資料。至少需要「名稱」或「植物編號」。</div>';$('#confirmExcel').disabled=!importRows.length}catch(err){console.error(err);$('#importStatus').textContent='❌ 讀取失敗：'+err.message}}
 $('#previewExcel')?.addEventListener('click',readExcelPreview);
 $('#confirmExcel')?.addEventListener('click',()=>{if(!importRows.length)return;const mode=$('#importMode').value;let added=0,updated=0;if(mode==='replace'){plants=importRows.map(clone);added=plants.length}else{for(const p of importRows){const i=plants.findIndex(x=>x.id===p.id);if(i>=0){plants[i]={...plants[i],...p};updated++}else{plants.push(p);added++}}}selected=plants[0]?.id||null;renderAll();$('#importStatus').innerHTML=`✅ 匯入完成：新增 <b>${added}</b> 筆、更新 <b>${updated}</b> 筆，目前共 <b>${plants.length}</b> 株。`;toast('Excel 資料已更新到植物清單')});
-$('#exportExcel')?.addEventListener('click',()=>{if(!window.XLSX)return toast('Excel 元件尚未載入');const rows=plants.map(p=>({'植物編號':p.id,'名稱':p.name,'品種':p.variety,'來源':p.source,'原始購入價格':p.price,'狀態':p.status,'主要地點':p.loc?.[0]||'','區域':p.loc?.[1]||'','具體位置':p.loc?.[2]||'','盆器':p.pot,'母株':p.mother||'','澆水週期':p.waterEvery,'施肥週期':p.fertEvery,'上次澆水':p.lastWater,'上次施肥':p.lastFert}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'植物資料');XLSX.writeFile(wb,`植物資料_${TODAY}.xlsx`)});
+$('#exportExcel')?.addEventListener('click',()=>{if(!window.XLSX)return toast('Excel 元件尚未載入');const rows=plants.map(p=>({'植物編號':p.id,'名稱':p.name,'品種':p.variety,'來源':p.source,'原始購入價格':p.price,'碳氮比':p.cnRatio||'','狀態':p.status,'主要地點':p.loc?.[0]||'','區域':p.loc?.[1]||'','具體位置':p.loc?.[2]||'','盆器':p.pot,'母株':p.mother||'','澆水週期':p.waterEvery,'施肥週期':p.fertEvery,'上次澆水':p.lastWater,'上次施肥':p.lastFert}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'植物資料');XLSX.writeFile(wb,`植物資料_${TODAY}.xlsx`)});
 $('#resetDemo')?.addEventListener('click',()=>{if(!confirm('確定要清除目前瀏覽器資料並恢復示範資料嗎？'))return;plants=clone(DEFAULT_PLANTS);logs=clone(DEFAULT_LOGS);chatHistory=[];scanned=null;selected=plants[0].id;renderAll();toast('已恢復示範資料')});
 
 // ---------- QR generation / scanning ----------
@@ -509,14 +737,257 @@ $('#scanImageBtn')?.addEventListener('click',async()=>{const file=$('#qrImageFil
 $('#simulateScanBtn')?.addEventListener('click',()=>identifyQrText($('#qrSelect').value));
 function applyQrFromUrl(){const id=new URLSearchParams(location.search).get('plant');if(id&&plants.some(p=>p.id===id)){identifyQrText(id);show('qr')}}
 
-// ---------- Gemini chat ----------
-function renderChat(){const box=$('#chatMessages');if(!box)return;if(!chatHistory.length){box.innerHTML='<div class="notice seed">👋 你可以問我：「皇冠 #018 最近需要澆水嗎？」、「家裡有幾株皇冠？」或掃 QR 後問「這株目前在哪裡？」</div>';return}box.innerHTML=chatHistory.map(m=>`<div class="chat-msg ${m.role==='user'?'user':'ai'}"><div><div class="chat-bubble">${esc(m.text)}</div><div class="chat-meta">${m.role==='user'?'你':'Gemini 植物管家'}</div></div></div>`).join('');box.scrollTop=box.scrollHeight}
-async function checkGemini(){try{const r=await fetch('/api/health');const j=await r.json();if(j.gemini){$('#geminiStatus').innerHTML='<span class="status-dot ok"></span>Gemini 已連線，可以實際對話。'}else{$('#geminiStatus').innerHTML='<span class="status-dot warn"></span>網站已上線，但尚未設定 GEMINI_API_KEY。'}}catch{$('#geminiStatus').innerHTML='<span class="status-dot bad"></span>目前是純前端預覽；部署 Web Service 後即可連接 Gemini。'}}
-function compactPlantData(){return plants.map(p=>({id:p.id,name:p.name,variety:p.variety,status:p.status,source:p.source,price:p.price,location:(p.loc||[]).join(' > '),pot:p.pot,mother:p.mother,waterEvery:p.waterEvery,fertEvery:p.fertEvery,lastWater:p.lastWater,lastFert:p.lastFert,risk:p.risk}))}
-$('#geminiChatForm')?.addEventListener('submit',async e=>{e.preventDefault();const input=$('#geminiInput'),text=input.value.trim();if(!text)return;chatHistory.push({role:'user',text});input.value='';renderChat();$('#sendGemini').disabled=true;$('#sendGemini').textContent='思考中…';try{const r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,scannedPlantId:scanned,plants:compactPlantData(),recentLogs:logs.slice(0,30),history:chatHistory.slice(-10,-1)})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Gemini API 錯誤');chatHistory.push({role:'assistant',text:j.text||'沒有收到回覆'});saveState();renderChat()}catch(err){chatHistory.push({role:'assistant',text:'目前無法連線 Gemini：'+err.message});renderChat()}finally{$('#sendGemini').disabled=false;$('#sendGemini').textContent='➤ 傳送'}});
-$('#clearChat')?.addEventListener('click',()=>{chatHistory=[];saveState();renderChat()});
-function setupVoiceButton(buttonId,textareaId,statusId){const btn=$('#'+buttonId),input=$('#'+textareaId),status=$('#'+statusId),SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!btn||!input||!status)return;if(!SR){btn.disabled=true;btn.textContent='🎙️ 此瀏覽器不支援語音';status.textContent='請改用 Chrome / Edge 或直接文字輸入';return}const rec=new SR();rec.lang='zh-TW';rec.interimResults=true;rec.continuous=false;let listening=false,finalText='';btn.addEventListener('click',()=>{if(listening)return rec.stop();finalText='';try{rec.start()}catch{}});rec.onstart=()=>{listening=true;btn.classList.add('listening');btn.textContent='⏹️ 點一下停止';status.textContent='正在聽你說話…'};rec.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t;else interim+=t}input.value=(finalText||interim).trim()};rec.onerror=e=>{status.textContent=e.error==='not-allowed'?'請允許麥克風權限':'語音辨識失敗：'+e.error};rec.onend=()=>{listening=false;btn.classList.remove('listening');btn.textContent='🎙️ 點一下開始說話';status.textContent=input.value.trim()?'✅ 已轉成文字':'可用中文直接詢問'}}
-setupVoiceButton('geminiMic','geminiInput','geminiVoiceStatus');setupVoiceButton('micBtn2','aiText2','voiceStatus2');
+// ---------- 語音 / 文字查詢植物資料（不使用外部 AI） ----------
+function renderChat(){
+  const box=$('#chatMessages');
+  if(!box)return;
+  if(!chatHistory.length){
+    box.innerHTML='<div class="notice seed">👋 可以直接說：「皇冠 #018 在哪裡？」、「我家裡有幾株皇冠？」、「哪些植物該澆水？」、「女王上次施肥是什麼時候？」</div>';
+    return;
+  }
+  box.innerHTML=chatHistory.map(m=>`<div class="chat-msg ${m.role==='user'?'user':'ai'}"><div><div class="chat-bubble">${esc(m.text)}</div><div class="chat-meta">${m.role==='user'?'你':'植物資料助手'}</div></div></div>`).join('');
+  box.scrollTop=box.scrollHeight;
+}
+
+function checkGemini(){
+  const el=$('#geminiStatus');
+  if(el)el.innerHTML='<span class="status-dot ok"></span>本機資料查詢已就緒，不需要 Gemini 或 API Key。';
+}
+
+function normalizeQuery(s){
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[，。！？?、：:；;\s]/g,'')
+    .replace(/號/g,'');
+}
+
+function matchPlantsFromQuery(text){
+  const q=normalizeQuery(text);
+  const useScanned=/它|這株|這棵|這盆/.test(text) && scanned;
+  if(useScanned){
+    const p=plants.find(x=>x.id===scanned);
+    return p?[p]:[];
+  }
+
+  let found=plants.filter(p=>{
+    const id=normalizeQuery(p.id);
+    const id2=normalizeQuery(p.id.replace('#',''));
+    const name=normalizeQuery(p.name);
+    const variety=normalizeQuery(p.variety);
+    return (id && q.includes(id)) || (id2 && q.includes(id2)) ||
+           (name && q.includes(name)) || (variety && q.includes(variety));
+  });
+
+  // If no explicit plant, allow location/status/source keywords to filter later.
+  return found;
+}
+
+function filterByContext(list,text){
+  let arr=[...list];
+  const locWords=['家裡','學校','公司','騎樓','陽台','溫室','辦公區','左架','右架','育苗架','a架','b架','窗邊'];
+  for(const word of locWords){
+    if(normalizeQuery(text).includes(normalizeQuery(word))){
+      arr=arr.filter(p=>(p.loc||[]).some(x=>normalizeQuery(x).includes(normalizeQuery(word))));
+    }
+  }
+  const statuses=['持有','幼苗','繁殖中','待出售','已出售','已送人','已死亡'];
+  for(const s of statuses){
+    if(text.includes(s))arr=arr.filter(p=>p.status===s);
+  }
+  if(text.includes('自行繁殖')||text.includes('繁殖的'))arr=arr.filter(p=>p.source==='自行繁殖');
+  if(text.includes('購入')||text.includes('買的'))arr=arr.filter(p=>p.source==='購入');
+  return arr;
+}
+
+function fmtPlant(p){
+  return `${p.id}（${(p.loc||[]).join(' ＞ ') || '位置未設定'}）`;
+}
+
+function speakAnswer(text){
+  try{
+    if(!('speechSynthesis' in window))return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(String(text).replace(/[🌿💧🧪📍💰🪴🧬✅⚠️]/g,''));
+    u.lang='zh-TW';
+    u.rate=1;
+    window.speechSynthesis.speak(u);
+  }catch{}
+}
+
+function localPlantQuery(text){
+  const raw=String(text||'').trim();
+  if(!raw)return '請先輸入或說出你要查詢的內容。';
+  const q=normalizeQuery(raw);
+
+  let explicit=matchPlantsFromQuery(raw);
+  let base=explicit.length?explicit:[...plants];
+  base=filterByContext(base,raw);
+
+  // 哪些植物該澆水 / 施肥
+  if(/哪些|哪幾株|誰/.test(raw) && /澆水|喝水/.test(raw)){
+    const due=activePlants().filter(p=>careState(p.lastWater,p.waterEvery).due);
+    return due.length
+      ? `目前有 ${due.length} 株需要澆水：${due.map(p=>`${p.id}（${careState(p.lastWater,p.waterEvery).text}）`).join('、')}。`
+      : '目前沒有到期需要澆水的植物。';
+  }
+  if(/哪些|哪幾株|誰/.test(raw) && /施肥|肥料/.test(raw)){
+    const due=activePlants().filter(p=>careState(p.lastFert,p.fertEvery).due);
+    return due.length
+      ? `目前有 ${due.length} 株需要施肥：${due.map(p=>`${p.id}（${careState(p.lastFert,p.fertEvery).text}）`).join('、')}。`
+      : '目前沒有到期需要施肥的植物。';
+  }
+
+  // 有哪些植物 / 清單
+  if(/有哪些植物|植物有哪些|列出植物|植物清單|目前有哪些/.test(raw)){
+    const arr=filterByContext([...plants],raw);
+    return arr.length
+      ? `目前共有 ${arr.length} 株：${arr.map(p=>p.id).join('、')}。`
+      : '目前找不到符合條件的植物。';
+  }
+
+  // 幾株 / 多少株
+  if(/幾株|多少株|數量|共有幾/.test(raw)){
+    return `符合條件的植物共有 ${base.length} 株${base.length?`：${base.map(p=>p.id).join('、')}`:''}。`;
+  }
+
+  // 沒指定明確植物但問單株資訊
+  const needsOne=/在哪|位置|放哪|澆水|施肥|價格|多少錢|狀態|母株|多久|上次|下次|盆|幾吋/.test(raw);
+  if(needsOne && explicit.length===0 && !scanned){
+    return '我還不知道你指哪一株。請說完整植物名稱或編號，例如「皇冠 18 在哪裡」，或先掃描花盆 QR。';
+  }
+
+  const arr=explicit.length?filterByContext(explicit,raw):base;
+  if(!arr.length)return '目前資料裡找不到符合條件的植物。';
+
+  // 多筆同名且問題需要單一答案
+  if(arr.length>1 && needsOne){
+    return `找到 ${arr.length} 株可能符合：${arr.map(p=>p.id).join('、')}。請再說完整編號。`;
+  }
+
+  const p=arr[0];
+
+  if(/在哪|位置|放哪/.test(raw)){
+    return `${p.id} 目前在 ${(p.loc||[]).join(' ＞ ') || '尚未設定位置'}。`;
+  }
+  if(/上次.*澆水|最近.*澆水|最後.*澆水/.test(raw)){
+    return `${p.id} 上次澆水是 ${p.lastWater || '尚未紀錄'}。`;
+  }
+  if(/下次.*澆水|多久.*澆水|要澆水|該澆水/.test(raw)){
+    const s=careState(p.lastWater,p.waterEvery);
+    return `${p.id} 設定每 ${p.waterEvery||'未設定'} 天澆水一次，上次澆水 ${p.lastWater||'未紀錄'}，目前是「${s.text}」，下次日期 ${s.next}。`;
+  }
+  if(/上次.*施肥|最近.*施肥|最後.*施肥/.test(raw)){
+    return `${p.id} 上次施肥是 ${p.lastFert || '尚未紀錄'}。`;
+  }
+  if(/下次.*施肥|多久.*施肥|要施肥|該施肥/.test(raw)){
+    const s=careState(p.lastFert,p.fertEvery);
+    return `${p.id} 設定每 ${p.fertEvery||'未設定'} 天施肥一次，上次施肥 ${p.lastFert||'未紀錄'}，目前是「${s.text}」，下次日期 ${s.next}。`;
+  }
+  if(/價格|多少錢|購入價|成本/.test(raw)){
+    return `${p.id} 的原始購入價格是 NT$ ${(Number(p.price)||0).toLocaleString()}。`;
+  }
+  if(/狀態/.test(raw)){
+    return `${p.id} 目前狀態是「${p.status}」。`;
+  }
+  if(/母株|媽媽|母本/.test(raw)){
+    return `${p.id} 的母株是 ${p.mother || '無／購入個體'}。`;
+  }
+  if(/幾吋|盆器|什麼盆|盆/.test(raw)){
+    return `${p.id} 目前盆器是 ${p.pot || '尚未設定'}。`;
+  }
+
+  return `${p.id}：狀態 ${p.status}，位置 ${(p.loc||[]).join(' ＞ ') || '未設定'}，盆器 ${p.pot||'未設定'}，上次澆水 ${p.lastWater||'未紀錄'}，上次施肥 ${p.lastFert||'未紀錄'}。`;
+}
+
+function runLocalQuery(text){
+  const answer=localPlantQuery(text);
+  chatHistory.push({role:'user',text});
+  chatHistory.push({role:'assistant',text:answer});
+  saveState();
+  renderChat();
+  speakAnswer(answer);
+  return answer;
+}
+
+$('#geminiChatForm')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  const input=$('#geminiInput');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';
+  runLocalQuery(text);
+});
+
+$('#clearChat')?.addEventListener('click',()=>{
+  chatHistory=[];
+  saveState();
+  renderChat();
+});
+
+function setupVoiceButton(buttonId,textareaId,statusId,autoSubmit=false){
+  const btn=$('#'+buttonId),input=$('#'+textareaId),status=$('#'+statusId);
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!btn||!input||!status)return;
+
+  if(!SR){
+    btn.disabled=true;
+    btn.textContent='🎙️ 此瀏覽器不支援語音';
+    status.textContent='請改用 Chrome / Edge 或直接文字輸入';
+    return;
+  }
+
+  const rec=new SR();
+  rec.lang='zh-TW';
+  rec.interimResults=true;
+  rec.continuous=false;
+  let listening=false,finalText='';
+
+  btn.addEventListener('click',()=>{
+    if(listening)return rec.stop();
+    finalText='';
+    try{rec.start()}catch{}
+  });
+
+  rec.onstart=()=>{
+    listening=true;
+    btn.classList.add('listening');
+    btn.textContent='⏹️ 點一下停止';
+    status.textContent='正在聽你說話…';
+  };
+
+  rec.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal)finalText+=t;
+      else interim+=t;
+    }
+    input.value=(finalText||interim).trim();
+    status.textContent=input.value?`辨識中：${input.value}`:'正在聽你說話…';
+  };
+
+  rec.onerror=e=>{
+    status.textContent=e.error==='not-allowed'
+      ?'請允許網站使用麥克風'
+      :'語音辨識失敗：'+e.error;
+  };
+
+  rec.onend=()=>{
+    listening=false;
+    btn.classList.remove('listening');
+    btn.textContent=buttonId==='geminiMic'?'🎙️ 點一下開始說話':'🎙️ 語音輸入';
+    const text=input.value.trim();
+    status.textContent=text?'✅ 已辨識完成':'可用中文直接詢問';
+    if(autoSubmit && text){
+      input.value='';
+      runLocalQuery(text);
+    }
+  };
+}
+
+setupVoiceButton('geminiMic','geminiInput','geminiVoiceStatus',true);
+setupVoiceButton('micBtn2','aiText2','voiceStatus2',false);
+
 function parseAI(text,output){let plant=scanned;if(!plant){const hit=plants.find(p=>text.includes(p.id)||text.includes(p.id.replace(' #','')));if(hit)plant=hit.id}if(!plant){output.classList.remove('hidden');output.textContent='⚠️ 無法確認是哪一株植物，請先掃 QR 或輸入完整編號。';return}let action='紀錄';if(/澆水/.test(text))action='澆水';else if(/施肥/.test(text))action='施肥';else if(/換.*盆|吋盆/.test(text))action='換盆';else if(/移到|移動/.test(text))action='移動';else if(/死|死亡/.test(text))action='死亡';else if(/分株|側芽|繁殖/.test(text))action='繁殖';const pot=(text.match(/(\d+)\s*吋/)||[])[1];pending={plant,action,text,pot};output.classList.remove('hidden');output.innerHTML=`<b>✨ 解析結果</b><div style="margin-top:8px">🌿 植物：<b>${esc(plant)}</b></div><div>⚙️ 操作：<b>${action}</b></div>${pot?`<div>🪴 新盆器：<b>${pot}吋</b></div>`:''}<div>📅 日期：<b>今天</b></div><div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn primary confirmAI" type="button">✅ 確認寫入</button><button class="btn cancelAI" type="button">取消</button></div>`;output.querySelector('.confirmAI').addEventListener('click',()=>{const p=plants.find(x=>x.id===pending.plant);if(!p)return;if(pending.action==='換盆'&&pending.pot)p.pot=pending.pot+'吋';if(pending.action==='死亡')p.status='已死亡';if(pending.action==='澆水')p.lastWater=TODAY;if(pending.action==='施肥')p.lastFert=TODAY;logs.unshift({plant:p.id,action:pending.action,note:pending.text,date:'今天'});pending=null;output.innerHTML='✅ 已確認並完成紀錄。';renderAll()});output.querySelector('.cancelAI').addEventListener('click',()=>{output.classList.add('hidden');pending=null})}
 $('#aiForm2')?.addEventListener('submit',e=>{e.preventDefault();const t=$('#aiText2').value.trim();if(!t)return toast('請輸入指令');parseAI(t,$('#aiResult2'))});
 
