@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>植物管理工具</title>
+<style>
+:root{
+  --bg:#f3f8f2;--panel:#ffffff;--panel2:#eef7ee;--text:#17331d;--muted:#718074;
+  --line:#dbe7db;--green:#2f8f52;--green2:#63b76d;--soft:#e8f5e9;
+  --blue:#e9f2ff;--yellow:#fff5d6;--pink:#fde9ef;--orange:#fff0e0;
+  --shadow:0 12px 32px rgba(43,90,52,.08);
+  --radius:20px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:linear-gradient(180deg,#edf6ec,#f8fbf7);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+.hidden{display:none!important}
+.layout{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr)}
+.sidebar{
+  position:sticky;top:0;height:100vh;padding:20px 16px;border-right:1px solid var(--line);
+  background:rgba(255,255,255,.96);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:18px
+}
+.brand{padding:6px 8px}
+.brand .eyebrow{font-size:12px;color:var(--muted)}
+.brand h1{font-size:22px;margin:4px 0 0}
+.nav{display:grid;gap:7px}
+.navbtn{
+  width:100%;display:flex;align-items:center;gap:10px;padding:12px;border:none;border-radius:14px;
+  background:transparent;color:var(--muted);font-weight:700;text-align:left
+}
+.navbtn span{font-size:20px}
+.navbtn.active{background:var(--soft);color:var(--green)}
+.side-note{margin-top:auto;border:1px solid var(--line);background:var(--panel2);padding:14px;border-radius:16px;font-size:13px}
+.main{min-width:0}
+.topbar{
+  position:sticky;top:0;z-index:20;background:rgba(248,251,247,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px
+}
+.topbar .title{font-weight:800}
+.topbar .sub{font-size:12px;color:var(--muted)}
+.iconbtn,.btn{
+  min-height:44px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--text);padding:10px 14px;font-weight:700
+}
+.btn.primary{background:var(--green);color:white;border-color:var(--green)}
+.btn.soft{background:var(--soft)}
+.content{padding:24px;max-width:1500px;margin:0 auto}
+.view{display:none}.view.active{display:block}
+.hero{
+  padding:26px;border-radius:24px;color:white;
+  background:radial-gradient(circle at 90% 15%,rgba(255,255,255,.25),transparent 22%),linear-gradient(135deg,#2f8f52,#7abb6e);
+  box-shadow:var(--shadow)
+}
+.hero h2{font-size:30px;line-height:1.2;margin:6px 0 0;max-width:700px}
+.hero p{margin:8px 0 0;opacity:.92}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.tag{font-size:12px;padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15)}
+.quick-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:16px}
+.quick{
+  min-height:92px;border:none;border-radius:18px;background:var(--panel);box-shadow:var(--shadow);padding:14px;color:var(--text);font-weight:800
+}
+.quick .icon{display:block;font-size:28px;margin-bottom:6px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);min-width:0}
+.stat-label{font-size:13px;color:var(--muted)}
+.stat-num{font-size:28px;font-weight:900;margin-top:5px}
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr);gap:16px;margin-top:16px}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.section-title h3{margin:0;font-size:17px}
+.notice{padding:12px 13px;border-radius:14px;margin-top:8px;font-size:14px}
+.notice.rain{background:var(--blue)}.notice.warn{background:var(--yellow)}.notice.seed{background:var(--soft)}
+input,select,textarea{
+  width:100%;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px;outline:none;color:var(--text);min-height:44px;font-size:16px
+}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(47,143,82,.12)}
+label{font-size:13px;font-weight:800;display:block;margin-bottom:6px}
+.toolbar{display:grid;grid-template-columns:minmax(0,1fr) 180px auto;gap:10px;margin-bottom:14px}
+.plant-layout{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(0,1.15fr);gap:16px}
+.plant-list{display:grid;gap:10px;max-height:720px;overflow:auto;padding-right:2px}
+.plant-item{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:16px;padding:14px;color:var(--text)}
+.plant-item:hover,.plant-item.selected{border-color:var(--green);background:var(--soft)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.plant-name{font-weight:900}.muted{font-size:12px;color:var(--muted);margin-top:4px}
+.badge{display:inline-flex;padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)}
+.detail-cover{padding:24px;color:#fff;border-radius:20px;background:linear-gradient(135deg,#4a9960,#92c47b)}
+.detail-cover h2{margin:4px 0;font-size:28px}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.mini{padding:12px;background:var(--panel2);border-radius:14px;text-align:center}
+.mini span{display:block;font-size:11px;color:var(--muted)}.mini b{display:block;margin-top:4px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-grid .full{grid-column:1/-1}
+.tree{text-align:center}
+.tree-root,.tree-child{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}
+.tree-children{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.qr-layout{display:grid;grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);gap:16px}
+.qrbox{width:190px;height:190px;margin:16px auto;display:grid;grid-template-columns:repeat(7,1fr);gap:3px;background:#fff;padding:12px;border-radius:16px;border:1px solid var(--line)}
+.qrbox i{background:#111;border-radius:2px}
+.ai-result{margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px}
+.logs-layout{display:grid;grid-template-columns:minmax(280px,.75fr) minmax(0,1.25fr);gap:16px}
+.timeline{position:relative;padding-left:28px}
+.timeline:before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.log{position:relative;margin-bottom:10px}
+.log:before{content:"";position:absolute;left:-24px;top:14px;width:11px;height:11px;border-radius:50%;background:var(--green)}
+.toast{
+  position:fixed;right:24px;bottom:24px;z-index:100;max-width:420px;background:#153b20;color:#fff;padding:12px 14px;border-radius:14px;box-shadow:var(--shadow);display:none
+}
+.toast.show{display:block}
+.mobile-nav{display:none}
+.mobile-only{display:none}
+
+@media (max-width:1100px){
+  .quick-grid{grid-template-columns:repeat(3,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .dashboard-grid,.plant-layout,.qr-layout,.logs-layout{grid-template-columns:1fr}
+  .plant-list{max-height:none}
+}
+@media (max-width:760px){
+  body{background:#f7faf6}
+  .layout{display:block;min-height:100vh}
+  .sidebar{display:none}
+  .topbar{padding:12px 14px}
+  .topbar .sub{display:none}
+  .content{padding:14px 14px 88px}
+  .hero{padding:20px;border-radius:20px}
+  .hero h2{font-size:23px}
+  .quick-grid{grid-template-columns:repeat(3,1fr);gap:9px}
+  .quick{min-height:84px;padding:10px;font-size:13px}
+  .quick .icon{font-size:24px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:9px}
+  .stat-num{font-size:22px}
+  .dashboard-grid,.plant-layout,.qr-layout,.logs-layout{grid-template-columns:1fr}
+  .toolbar{grid-template-columns:1fr auto}
+  .toolbar select{grid-column:1/-1}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .full{grid-column:auto}
+  .info-grid{grid-template-columns:repeat(3,1fr);gap:7px}
+  .actions{grid-template-columns:repeat(2,1fr)}
+  .tree-children{grid-template-columns:repeat(2,1fr)}
+  .mobile-nav{
+    display:grid;position:fixed;bottom:0;left:0;right:0;z-index:50;
+    grid-template-columns:repeat(5,1fr);gap:3px;padding:7px 8px;background:rgba(255,255,255,.97);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line)
+  }
+  .mobile-nav .navbtn{font-size:11px;text-align:center;justify-content:center;display:block;padding:6px 2px}
+  .mobile-nav .navbtn span{display:block;font-size:19px;margin:0}
+  .toast{left:14px;right:14px;bottom:80px;max-width:none}
+  .mobile-only{display:block}
+}
+@media (max-width:380px){
+  .quick-grid{grid-template-columns:1fr 1fr}
+  .info-grid{grid-template-columns:1fr}
+}
+
+.voice-row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.micbtn{
+  min-height:48px;border:none;border-radius:14px;padding:11px 16px;
+  background:#fff0f3;color:#b4234d;font-weight:900;display:inline-flex;
+  align-items:center;justify-content:center;gap:8px;border:1px solid #f3c7d5
+}
+.micbtn.listening{
+  background:#d93055;color:#fff;border-color:#d93055;
+  box-shadow:0 0 0 5px rgba(217,48,85,.13)
+}
+.voice-status{font-size:13px;color:var(--muted);font-weight:700}
+.voice-status.ok{color:var(--green)}
+.voice-status.err{color:#b42318}
+@media(max-width:760px){
+  .micbtn{width:100%;font-size:16px}
+  .voice-status{width:100%;text-align:center}
+}
+
+
+.chat-shell{display:grid;grid-template-rows:auto minmax(320px,1fr) auto;gap:12px;min-height:620px}
+.chat-messages{background:#f8fbf7;border:1px solid var(--line);border-radius:16px;padding:14px;overflow:auto;max-height:520px;min-height:320px}
+.chat-msg{display:flex;margin:9px 0}.chat-msg.user{justify-content:flex-end}.chat-bubble{max-width:min(760px,86%);padding:11px 13px;border-radius:16px;white-space:pre-wrap;line-height:1.55}
+.chat-msg.ai .chat-bubble{background:#fff;border:1px solid var(--line)}.chat-msg.user .chat-bubble{background:var(--green);color:white}
+.chat-meta{font-size:11px;color:var(--muted);margin-top:4px}.chat-compose{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.chat-compose textarea{min-height:74px}
+.data-layout{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(0,1.2fr);gap:16px}.import-preview{overflow:auto;max-height:440px}.preview-table{width:100%;border-collapse:collapse;font-size:13px}.preview-table th,.preview-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.preview-table th{position:sticky;top:0;background:white}
+.qr-real{min-height:250px;border:1px dashed var(--line);border-radius:16px;padding:12px;background:#fafdfa}.qr-generated{display:flex;justify-content:center;align-items:center;min-height:220px}.qr-link{word-break:break-all;font-size:12px;color:var(--muted);margin-top:8px}
+.status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#bbb}.status-dot.ok{background:#3ca65a}.status-dot.warn{background:#e6a700}.status-dot.bad{background:#d64545}
+.two-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px}.danger{background:#fff1f1!important;color:#a22525!important;border-color:#f0cccc!important}
+@media(max-width:1100px){.data-layout{grid-template-columns:1fr}}
+@media(max-width:760px){.chat-compose{grid-template-columns:1fr}.two-btn{grid-template-columns:1fr}.chat-shell{min-height:540px}.chat-messages{max-height:430px}}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="eyebrow">Plant Management & Lifecycle Hub</div>
+      <h1>🌿 植物管理工具</h1>
+    </div>
+    <div class="nav">
+      <button class="navbtn active" data-go="home"><span>🏠</span>首頁</button>
+      <button class="navbtn" data-go="plants"><span>🌱</span>植物管理</button>
+      <button class="navbtn" data-go="family"><span>🧬</span>繁殖家族</button>
+      <button class="navbtn" data-go="logs"><span>💧</span>照顧紀錄</button>
+      <button class="navbtn" data-go="import"><span>📥</span>資料匯入</button>
+      <button class="navbtn" data-go="qr"><span>📱</span>QR Code</button>
+      <button class="navbtn" data-go="ai"><span>🤖</span>Gemini 管家</button>
+    </div>
+    <div class="side-note">
+      <b>智慧操作</b><br>
+      掃花盆 → 說一句 → 確認 → 完成
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="title">植物管理工具</div>
+        <div class="sub">價格｜狀態｜時間｜位置｜場域｜繁殖｜流向</div>
+      </div>
+      <button id="notifyBtn" class="iconbtn">🔔 3</button>
+    </header>
+
+    <main class="content">
+      <section id="home" class="view active">
+        <div class="hero">
+          <div>今天也一起照顧植物吧 🌱</div>
+          <h2>每一株植物，都有自己的身分與生命週期</h2>
+          <p>用唯一編號、位置、繁殖家族、QR Code 與 AI 管理大量植物。</p>
+          <div class="tags"><span class="tag">價格</span><span class="tag">狀態</span><span class="tag">位置</span><span class="tag">繁殖</span><span class="tag">QR</span><span class="tag">AI</span></div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick" data-go="qr"><span class="icon">📱</span>掃花盆</button>
+          <button class="quick" data-go="ai"><span class="icon">🤖</span>跟 AI 對話</button>
+          <button id="goAdd" class="quick"><span class="icon">➕</span>新增植物</button>
+          <button class="quick" data-go="plants"><span class="icon">🔎</span>搜尋植物</button>
+          <button class="quick" data-go="family"><span class="icon">🧬</span>家族關係</button>
+          <button class="quick" data-go="logs"><span class="icon">💧</span>照顧紀錄</button>
+          <button class="quick" data-go="import"><span class="icon">📥</span>Excel 匯入</button>
+        </div>
+
+        <div class="stats">
+          <div class="card"><div class="stat-label">🪴 目前持有</div><div id="holdingStat" class="stat-num">6 株</div></div>
+          <div class="card"><div class="stat-label">💰 原始投入</div><div id="moneyStat" class="stat-num">NT$ 11,300</div></div>
+          <div class="card"><div class="stat-label">🌱 自繁植物</div><div id="propStat" class="stat-num">3 株</div></div>
+          <div class="card"><div class="stat-label">⚠️ 高風險</div><div id="riskStat" class="stat-num">2 株</div></div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="section-title"><h3>📍 植物位置概況</h3><span class="muted">即時統計</span></div>
+            <div id="locationSummary"></div>
+          </div>
+          <div class="card">
+            <div class="section-title">
+              <h3>🔔 今日照顧提醒</h3>
+              <button id="refreshReminders" class="btn soft" type="button">✨ 自動整理</button>
+            </div>
+            <div id="reminderSummary" class="muted">依每株植物設定的澆水／施肥週期自動計算。</div>
+            <div id="reminderList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="plants" class="view">
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="搜尋名稱、編號、品種...">
+          <select id="statusFilter">
+            <option value="">全部狀態</option><option>持有</option><option>幼苗</option><option>待出售</option><option>已出售</option><option>已死亡</option>
+          </select>
+          <button id="goAdd2" class="btn primary">➕ 新增植物</button>
+        </div>
+        <div class="plant-layout">
+          <div class="card"><div id="plantList" class="plant-list"></div></div>
+          <div id="detailBox" class="card"></div>
+        </div>
+      </section>
+
+      <section id="family" class="view">
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="section-title"><h3>🧬 家族關係</h3><span class="muted">母株死亡後仍保留</span></div>
+            <div id="familyTree" class="tree"></div>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">🌱 新增繁殖紀錄</h3>
+            <form id="propForm">
+              <label>母株</label><select id="motherSelect"></select>
+              <label>繁殖方式</label><select id="propMethod"><option>側芽</option><option>分株</option><option>扦插</option><option>播種</option><option>孢子</option></select>
+              <label>數量</label><input id="propCount" type="number" min="1" max="5" value="1">
+              <button class="btn primary" style="width:100%;margin-top:12px" type="submit">建立子株</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="logs" class="view">
+        <div class="logs-layout">
+          <div class="card">
+            <h3 style="margin-top:0">💧 新增照顧紀錄</h3>
+            <form id="logForm">
+              <label>植物</label><select id="logPlant"></select>
+              <label>操作</label><select id="logAction"><option>澆水</option><option>施肥</option><option>換盆</option></select>
+              <label>備註</label><input id="logNote" placeholder="例如：介質已乾">
+              <button class="btn primary" style="width:100%;margin-top:12px" type="submit">新增紀錄</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>📚 最近紀錄</h3></div>
+            <div id="logList" class="timeline"></div>
+          </div>
+        </div>
+      </section>
+
+
+      <section id="import" class="view">
+        <div class="data-layout">
+          <div class="card">
+            <div class="section-title"><h3>📥 Excel／CSV 批次匯入</h3><span class="badge">100+ 筆可用</span></div>
+            <p class="muted">支援 .xlsx、.xls、.csv。先預覽，再確認匯入；同編號會更新，新的編號會新增。</p>
+            <label>選擇客戶資料檔</label>
+            <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,text/csv">
+            <label style="margin-top:10px">匯入方式</label>
+            <select id="importMode"><option value="merge">智慧合併：同 ID 更新／新 ID 新增</option><option value="replace">全部取代目前植物資料</option></select>
+            <div class="two-btn" style="margin-top:12px">
+              <button id="previewExcel" class="btn soft" type="button">👀 預覽資料</button>
+              <button id="confirmExcel" class="btn primary" type="button" disabled>✅ 確認匯入</button>
+            </div>
+            <div id="importStatus" class="notice seed">尚未選擇檔案。</div>
+            <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+            <div class="two-btn">
+              <button id="exportExcel" class="btn" type="button">📤 匯出目前資料</button>
+              <button id="resetDemo" class="btn danger" type="button">↩️ 重設示範資料</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>資料預覽</h3><span id="previewCount" class="muted">0 筆</span></div>
+            <div id="excelPreview" class="import-preview"><div class="notice seed">選擇 Excel 後按「預覽資料」。</div></div>
+            <div class="notice warn" style="margin-top:12px">建議欄位：植物編號、名稱、品種、狀態、來源、購入價格、主要地點、區域、具體位置、盆器、母株、澆水週期、施肥週期、上次澆水、上次施肥。缺少欄位會套用安全預設值。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="qr" class="view">
+        <div class="qr-layout">
+          <div class="card">
+            <div class="section-title"><h3>🏷️ 產生花盆 QR Code</h3><span class="badge">連到植物個體</span></div>
+            <label>選擇植物</label><select id="qrSelect"></select>
+            <button id="generateQrBtn" class="btn primary" style="width:100%;margin-top:12px" type="button">🔳 產生這株植物的 QR</button>
+            <div id="generatedQr" class="qr-generated"></div>
+            <div id="generatedQrLink" class="qr-link">尚未產生。</div>
+            <button id="downloadQrBtn" class="btn" style="width:100%;margin-top:10px" type="button" disabled>⬇️ 下載 QR 圖片</button>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>📷 真正掃描 QR</h3><span class="badge">HTTPS 相機</span></div>
+            <div class="two-btn"><button id="startScanBtn" class="btn primary" type="button">📷 啟動相機掃描</button><button id="stopScanBtn" class="btn" type="button" disabled>⏹️ 停止掃描</button></div>
+            <div id="qrReader" class="qr-real" style="margin-top:12px"></div>
+            <label style="margin-top:12px">或從圖片辨識 QR</label><input id="qrImageFile" type="file" accept="image/*" capture="environment">
+            <button id="scanImageBtn" class="btn" style="width:100%;margin-top:8px" type="button">🖼️ 辨識圖片 QR</button>
+            <button id="simulateScanBtn" class="btn soft" style="width:100%;margin-top:8px" type="button">🧪 報告用：測試掃描所選植物</button>
+            <div id="scanResult" class="notice seed">尚未掃描植物。</div>
+            <button class="btn primary" data-go="ai" style="width:100%;margin-top:10px" type="button">🤖 跟 Gemini 詢問這株植物</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="ai" class="view">
+        <div class="dashboard-grid" style="grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr)">
+          <div class="card chat-shell">
+            <div>
+              <div class="section-title"><h3>🤖 Gemini 植物管家</h3><button id="clearChat" class="btn" type="button">清除對話</button></div>
+              <div id="geminiStatus" class="notice seed"><span class="status-dot warn"></span>正在檢查 Gemini 連線…</div>
+              <div id="aiContext" class="notice seed">尚未指定 QR 植物；AI 仍可查詢全部植物資料。</div>
+            </div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <form id="geminiChatForm">
+              <div class="chat-compose">
+                <div>
+                  <textarea id="geminiInput" placeholder="例如：皇冠 #018 最近要澆水嗎？／我家裡現在有幾株皇冠？／這株目前在哪裡？"></textarea>
+                  <div class="voice-row"><button class="micbtn" id="geminiMic" type="button">🎙️ 點一下開始說話</button><span id="geminiVoiceStatus" class="voice-status">可用中文直接詢問</span></div>
+                </div>
+                <button id="sendGemini" class="btn primary" type="submit">➤ 傳送</button>
+              </div>
+            </form>
+          </div>
+          <div>
+            <div class="card">
+              <h3 style="margin-top:0">🌿 AI 能讀取的植物資料</h3>
+              <div id="aiDataSummary" class="notice seed"></div>
+              <p class="muted">Gemini 每次詢問會收到目前植物資料與 QR 指定植物；不會讓 AI 未經確認直接修改資料。</p>
+            </div>
+            <div class="card" style="margin-top:16px">
+              <h3 style="margin-top:0">✨ 快速紀錄</h3>
+              <p class="muted">要修改植物資料時，先解析，再由你按確認。</p>
+              <form id="aiForm2">
+                <textarea id="aiText2" rows="4" placeholder="例如：皇冠 #018 今天施肥。"></textarea>
+                <div class="voice-row"><button class="micbtn" id="micBtn2" type="button">🎙️ 語音輸入</button><span class="voice-status" id="voiceStatus2">可直接說中文指令</span></div>
+                <button class="btn primary" style="width:100%;margin-top:10px" type="submit">解析紀錄</button>
+              </form>
+              <div id="aiResult2" class="ai-result hidden"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="add" class="view">
+        <div class="card">
+          <div class="section-title"><h3>➕ 新增植物</h3><button class="btn" data-go="plants">返回</button></div>
+          <form id="addForm" class="form-grid">
+            <div><label>名稱</label><input name="name" required placeholder="例如：皇冠"></div>
+            <div><label>品種</label><input name="variety" required placeholder="例如：鹿角蕨"></div>
+            <div><label>來源</label><select name="source"><option>購入</option><option>自行繁殖</option></select></div>
+            <div><label>原始購入價格</label><input name="price" type="number" min="0" value="0"></div>
+            <div><label>狀態</label><select name="status"><option>持有</option><option>幼苗</option><option>繁殖中</option><option>待出售</option></select></div>
+            <div><label>主要地點</label><select name="l1"><option>家裡</option><option>學校</option><option>公司</option></select></div>
+            <div><label>區域</label><input name="l2" placeholder="例如：騎樓"></div>
+            <div><label>具體位置</label><input name="l3" placeholder="例如：左架"></div>
+            <div class="full"><button class="btn primary" style="width:100%" type="submit">💾 建立植物</button></div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<nav class="mobile-nav">
+  <button class="navbtn active" data-go="home"><span>🏠</span>首頁</button>
+  <button class="navbtn" data-go="plants"><span>🌿</span>植物</button>
+  <button class="navbtn" data-go="family"><span>🧬</span>家族</button>
+  <button class="navbtn" data-go="logs"><span>💧</span>紀錄</button>
+  <button class="navbtn" data-go="qr"><span>📱</span>QR</button>
+</nav>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const DEFAULT_PLANTS=[
+{id:'皇冠 #001',name:'皇冠',variety:'P. coronarium',source:'購入',price:3000,status:'持有',loc:['家裡','騎樓','左架'],pot:'6吋',days:214,mother:null,risk:true,waterEvery:4,fertEvery:14,lastWater:'2026-09-04',lastFert:'2026-08-25'},
+{id:'皇冠 #011',name:'皇冠',variety:'P. coronarium',source:'自行繁殖',price:0,status:'幼苗',loc:['家裡','陽台','育苗架'],pot:'3吋',days:48,mother:'皇冠 #001',risk:false,waterEvery:3,fertEvery:10,lastWater:'2026-09-05',lastFert:'2026-08-29'},
+{id:'皇冠 #012',name:'皇冠',variety:'P. coronarium',source:'自行繁殖',price:0,status:'持有',loc:['學校','溫室','A架'],pot:'4吋',days:48,mother:'皇冠 #001',risk:false,waterEvery:5,fertEvery:14,lastWater:'2026-09-03',lastFert:'2026-08-27'},
+{id:'皇冠 #018',name:'皇冠',variety:'P. coronarium',source:'自行繁殖',price:0,status:'幼苗',loc:['家裡','騎樓','右架'],pot:'3吋',days:26,mother:'皇冠 #001',risk:true,waterEvery:3,fertEvery:10,lastWater:'2026-09-02',lastFert:'2026-08-28'},
+{id:'女王 #002',name:'女王',variety:'P. wandae',source:'購入',price:5200,status:'持有',loc:['學校','溫室','B架'],pot:'8吋',days:301,mother:null,risk:false,waterEvery:5,fertEvery:21,lastWater:'2026-09-01',lastFert:'2026-08-15'},
+{id:'象耳 #003',name:'象耳',variety:'Alocasia',source:'購入',price:3100,status:'待出售',loc:['公司','辦公區','窗邊'],pot:'7吋',days:155,mother:null,risk:false,waterEvery:4,fertEvery:14,lastWater:'2026-09-04',lastFert:'2026-08-24'}
+];
+const DEFAULT_LOGS=[
+{plant:'皇冠 #018',action:'澆水',note:'介質偏乾',date:'今天 09:20'},
+{plant:'皇冠 #001',action:'施肥',note:'薄肥 1:1000',date:'昨天 18:30'},
+{plant:'皇冠 #001',action:'換盆',note:'3吋換5吋',date:'08/28 11:10'}
+];
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function loadJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return Array.isArray(v)?v:clone(fallback)}catch{return clone(fallback)}}
+let plants=loadJSON('plantHub.plants',DEFAULT_PLANTS);
+let logs=loadJSON('plantHub.logs',DEFAULT_LOGS);
+let selected=plants[0]?.id||null, scanned=localStorage.getItem('plantHub.scanned')||null, pending=null, importRows=[];
+let chatHistory=loadJSON('plantHub.chat',[]);
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function saveState(){localStorage.setItem('plantHub.plants',JSON.stringify(plants));localStorage.setItem('plantHub.logs',JSON.stringify(logs));localStorage.setItem('plantHub.chat',JSON.stringify(chatHistory.slice(-30)));if(scanned)localStorage.setItem('plantHub.scanned',scanned);else localStorage.removeItem('plantHub.scanned')}
+function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2400)}
+function show(id){$$('.view').forEach(v=>v.classList.remove('active'));const view=$('#'+id);if(view)view.classList.add('active');$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.go===id));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
+$$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+$('#goAdd')?.addEventListener('click',()=>show('add'));$('#goAdd2')?.addEventListener('click',()=>show('add'));
+$('#notifyBtn')?.addEventListener('click',()=>{renderReminders();toast('提醒已重新整理 🌿')});
+$('#refreshReminders')?.addEventListener('click',()=>{renderReminders();toast('已依澆水／施肥週期重新計算提醒')});
+const TODAY=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`})();
+function parseDateOnly(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+m[1],+m[2]-1,+m[3]):null}
+function addDays(s,days){const t=parseDateOnly(s);if(t===null)return '';return new Date(t+days*86400000).toISOString().slice(0,10)}
+function diffDays(a,b){const ta=parseDateOnly(a),tb=parseDateOnly(b);return ta===null||tb===null?null:Math.round((tb-ta)/86400000)}
+function careState(last,every){const next=addDays(last,every);const delta=diffDays(TODAY,next);if(delta===null)return {next:'未設定',due:false,overdue:false,text:'未設定'};if(delta<0)return {next,due:true,overdue:true,text:`逾期 ${Math.abs(delta)} 天`};if(delta===0)return {next,due:true,overdue:false,text:'今天'};return {next,due:false,overdue:false,text:`${delta} 天後`}}
+function activePlants(){return plants.filter(p=>!['已出售','已死亡','已送人'].includes(p.status))}
+function renderReminders(){const target=$('#reminderList');if(!target)return;const due=[];activePlants().forEach(p=>{const w=careState(p.lastWater,p.waterEvery),f=careState(p.lastFert,p.fertEvery);if(w.due)due.push({plant:p.id,type:'澆水',icon:'💧',state:w});if(f.due)due.push({plant:p.id,type:'施肥',icon:'🧪',state:f})});$('#notifyBtn').textContent=`🔔 ${due.length}`;$('#reminderSummary').textContent=due.length?`今天共有 ${due.length} 項照顧提醒`:'今天沒有到期的澆水／施肥工作';target.innerHTML=due.length?due.map(r=>`<button class="notice ${r.state.overdue?'warn':'seed'} reminderItem" data-plant="${esc(r.plant)}" data-type="${r.type}" type="button" style="width:100%;border:none;text-align:left;color:inherit">${r.icon} <b>${esc(r.plant)}</b>｜${r.type}｜${r.state.text}<div class="muted">點一下可直接完成並更新日期</div></button>`).join(''):'<div class="notice seed">✅ 今天沒有到期提醒</div>';$$('.reminderItem').forEach(b=>b.addEventListener('click',()=>{const p=plants.find(x=>x.id===b.dataset.plant);if(!p)return;if(b.dataset.type==='澆水')p.lastWater=TODAY;if(b.dataset.type==='施肥')p.lastFert=TODAY;logs.unshift({plant:p.id,action:b.dataset.type,note:'由今日提醒完成',date:'今天'});renderAll();toast(`已完成 ${p.id} 的${b.dataset.type}`)}))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function renderStats(){const active=activePlants();$('#holdingStat').textContent=active.length+' 株';$('#moneyStat').textContent='NT$ '+plants.filter(p=>p.source==='購入').reduce((a,p)=>a+(Number(p.price)||0),0).toLocaleString();$('#propStat').textContent=plants.filter(p=>p.source==='自行繁殖').length+' 株';$('#riskStat').textContent=plants.filter(p=>p.risk).length+' 株';const counts={};active.forEach(p=>counts[p.loc?.[0]||'未設定']=(counts[p.loc?.[0]||'未設定']||0)+1);$('#locationSummary').innerHTML=Object.entries(counts).map(([k,v])=>`<div style="display:grid;grid-template-columns:90px 1fr 40px;gap:8px;align-items:center;margin:10px 0"><b>${esc(k)}</b><div style="height:9px;border-radius:99px;background:#edf1ec;overflow:hidden"><div style="height:100%;width:${Math.min(100,v/Math.max(1,active.length)*100)}%;background:#63b76d"></div></div><span>${v}</span></div>`).join('')||'<div class="muted">尚無植物</div>'}
+function renderPlants(){const q=($('#search')?.value||'').trim().toLowerCase(),status=$('#statusFilter')?.value||'';const list=plants.filter(p=>(!status||p.status===status)&&(!q||[p.id,p.name,p.variety,p.loc?.join(' ')].join(' ').toLowerCase().includes(q)));$('#plantList').innerHTML=list.length?list.map(p=>`<button class="plant-item ${p.id===selected?'selected':''}" data-id="${esc(p.id)}"><div class="row"><div><div class="plant-name">🌿 ${esc(p.id)}</div><div class="muted">${esc(p.variety)}</div></div><span class="badge">${esc(p.status)}</span></div><div class="chips"><span>📍 ${esc((p.loc||[]).join(' ＞ '))}</span><span>💰 NT$ ${(Number(p.price)||0).toLocaleString()}</span><span>🪴 ${esc(p.pot||'未設定')}</span></div></button>`).join(''):'<div class="muted">找不到符合條件的植物。</div>';$$('.plant-item').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.id;renderPlants();renderDetail()}))}
+function renderDetail(){const p=plants.find(x=>x.id===selected)||plants[0];if(!p){$('#detailBox').innerHTML='<div class="muted">尚無植物資料</div>';return}selected=p.id;const w=careState(p.lastWater,p.waterEvery),f=careState(p.lastFert,p.fertEvery);$('#detailBox').innerHTML=`<div class="detail-cover"><div style="font-size:12px;opacity:.82">植物數位身分證</div><h2>${esc(p.id)}</h2><div>${esc(p.variety)}</div></div><div class="info-grid"><div class="mini"><span>原始購入</span><b>NT$${(Number(p.price)||0).toLocaleString()}</b></div><div class="mini"><span>澆水</span><b>${esc(w.text)}</b></div><div class="mini"><span>施肥</span><b>${esc(f.text)}</b></div></div><div class="card" style="box-shadow:none;margin-top:12px"><div class="muted">📍 目前位置</div><b>${esc((p.loc||[]).join(' ＞ '))}</b></div><div class="card" style="box-shadow:none;margin-top:12px"><div class="muted">🧬 母株</div><b>${esc(p.mother||'無／購入個體')}</b></div><div class="card" style="box-shadow:none;margin-top:12px"><div class="section-title"><h3>⏰ 照顧週期設定</h3><span class="muted">用來產生提醒</span></div><div class="form-grid"><div><label>幾天澆水一次</label><input id="waterEvery" type="number" min="1" max="365" value="${Number(p.waterEvery)||4}"></div><div><label>幾天施肥一次</label><input id="fertEvery" type="number" min="1" max="365" value="${Number(p.fertEvery)||14}"></div><div><label>上次澆水</label><input id="lastWater" type="date" value="${esc(p.lastWater||TODAY)}"></div><div><label>上次施肥</label><input id="lastFert" type="date" value="${esc(p.lastFert||TODAY)}"></div><div class="full"><button id="saveCareSettings" class="btn primary" style="width:100%" type="button">💾 儲存照顧設定</button></div></div></div><div class="actions"><button class="btn quickAct" data-action="澆水">💧 澆水</button><button class="btn quickAct" data-action="施肥">🧪 施肥</button><button class="btn quickAct" data-action="換盆">🪴 換盆</button><button class="btn" id="detailQr" type="button">🔳 QR</button></div>`;$$('.quickAct').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.action==='澆水')p.lastWater=TODAY;if(b.dataset.action==='施肥')p.lastFert=TODAY;logs.unshift({plant:p.id,action:b.dataset.action,note:'快速操作',date:'今天'});renderAll();toast('已新增 '+b.dataset.action+' 紀錄')}));$('#saveCareSettings')?.addEventListener('click',()=>{p.waterEvery=Math.max(1,Number($('#waterEvery').value)||4);p.fertEvery=Math.max(1,Number($('#fertEvery').value)||14);p.lastWater=$('#lastWater').value||TODAY;p.lastFert=$('#lastFert').value||TODAY;renderAll();toast('照顧週期已儲存')});$('#detailQr')?.addEventListener('click',()=>{scanned=p.id;show('qr');setTimeout(()=>{$('#qrSelect').value=p.id;generateQrFor(p.id)},0)})}
+function fillSelects(){const alive=plants.filter(p=>p.status!=='已死亡');const opts=alive.map(p=>`<option value="${esc(p.id)}">${esc(p.id)}</option>`).join('');['motherSelect','qrSelect','logPlant'].forEach(id=>{const el=$('#'+id);if(!el)return;const old=el.value;el.innerHTML=opts;if(alive.some(p=>p.id===old))el.value=old});if(scanned&&$('#qrSelect')&&alive.some(p=>p.id===scanned))$('#qrSelect').value=scanned}
+function renderFamily(){const mothers=plants.filter(p=>plants.some(k=>k.mother===p.id));const root=mothers[0]||plants[0];if(!root){$('#familyTree').innerHTML='<div class="muted">尚無家族資料</div>';return}const kids=plants.filter(p=>p.mother===root.id);$('#familyTree').innerHTML=`<div class="tree-root">🌳<br><b>${esc(root.id)}</b><br><span class="muted">母株</span></div><div style="font-size:24px;margin:8px">↓</div><div class="tree-children">${kids.map(p=>`<div class="tree-child">🌱<br><b>${esc(p.id)}</b><br><span class="muted">${esc(p.status)}</span></div>`).join('')||'<span class="muted">尚無子株</span>'}</div>`}
+function renderLogs(){const el=$('#logList');if(el)el.innerHTML=logs.slice(0,100).map(l=>`<div class="log card" style="box-shadow:none"><div class="row"><b>${l.action==='澆水'?'💧':l.action==='施肥'?'🧪':'🪴'} ${esc(l.action)}</b><span class="muted">${esc(l.date)}</span></div><div style="margin-top:4px">${esc(l.plant)}</div><div class="muted">${esc(l.note)}</div></div>`).join('')||'<div class="muted">尚無紀錄</div>'}
+function renderAIContext(){const p=plants.find(x=>x.id===scanned);$('#aiContext').innerHTML=p?`✅ QR 已指定：<b>${esc(p.id)}</b><br><span class="muted">Gemini 會優先以這株植物回答「它／這株」的問題。</span>`:`目前共有 <b>${plants.length}</b> 株植物。尚未掃描 QR，Gemini 仍可查詢全部植物資料。`;$('#aiDataSummary').innerHTML=`📚 植物：<b>${plants.length}</b> 株<br>💧 照顧紀錄：<b>${logs.length}</b> 筆<br>📱 QR 指定：<b>${esc(scanned||'無')}</b>`}
+function renderAll(){renderStats();renderPlants();renderDetail();fillSelects();renderFamily();renderLogs();renderReminders();renderAIContext();renderChat();saveState()}
+$('#search')?.addEventListener('input',renderPlants);$('#statusFilter')?.addEventListener('change',renderPlants);
+function nextPlantId(name){let max=0;plants.filter(p=>p.name===name).forEach(p=>{const m=String(p.id).match(/#\s*(\d+)/);if(m)max=Math.max(max,+m[1])});return `${name} #${String(max+1).padStart(3,'0')}`}
+$('#addForm')?.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.currentTarget),name=String(f.get('name')||'').trim(),variety=String(f.get('variety')||'').trim();if(!name||!variety)return toast('請填寫名稱與品種');const source=f.get('source'),id=nextPlantId(name);plants.push({id,name,variety,source,price:source==='自行繁殖'?0:Math.max(0,Number(f.get('price'))||0),status:f.get('status'),loc:[f.get('l1'),f.get('l2')||'未設定區域',f.get('l3')||'未設定位置'],pot:'未設定',days:0,mother:null,risk:false,waterEvery:4,fertEvery:14,lastWater:TODAY,lastFert:TODAY});e.currentTarget.reset();selected=id;renderAll();toast('已建立 '+id);show('plants')});
+$('#propForm')?.addEventListener('submit',e=>{e.preventDefault();const mother=$('#motherSelect').value,m=plants.find(p=>p.id===mother),count=Math.min(30,Math.max(1,Number($('#propCount').value)||1));if(!m)return;for(let i=0;i<count;i++){const id=nextPlantId(m.name);plants.push({id,name:m.name,variety:m.variety,source:'自行繁殖',price:0,status:'幼苗',loc:[...(m.loc||[])],pot:'育苗盆',days:0,mother:m.id,risk:false,waterEvery:m.waterEvery||4,fertEvery:m.fertEvery||14,lastWater:TODAY,lastFert:TODAY})}renderAll();toast(`已建立 ${count} 株子株`)});
+$('#logForm')?.addEventListener('submit',e=>{e.preventDefault();const pid=$('#logPlant').value,act=$('#logAction').value,p=plants.find(x=>x.id===pid);if(p&&act==='澆水')p.lastWater=TODAY;if(p&&act==='施肥')p.lastFert=TODAY;logs.unshift({plant:pid,action:act,note:$('#logNote').value.trim()||'—',date:'今天'});$('#logNote').value='';renderAll();toast('已新增照顧紀錄')});
+
+// ---------- Excel / CSV import ----------
+function normKey(s){return String(s??'').trim().replace(/[\s_\-()（）]/g,'').toLowerCase()}
+function cell(row,aliases){const keys=Object.keys(row);for(const alias of aliases){const target=normKey(alias);const k=keys.find(x=>normKey(x)===target);if(k!==undefined&&row[k]!==undefined&&row[k]!==null&&String(row[k]).trim()!=='')return row[k]}return ''}
+function excelDate(v){if(!v)return '';if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}const s=String(v).trim().replace(/[/.]/g,'-');const d=new Date(s);if(!Number.isNaN(d.getTime()))return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return ''}
+function normalizeImportedRow(r,index){let name=String(cell(r,['名稱','植物名稱','品名','name'])||'').trim();let id=String(cell(r,['植物編號','編號','唯一編號','ID','id'])||'').trim();if(!name&&id)name=id.split('#')[0].trim();if(!name)return null;if(!id)id=nextPlantId(name);const source=String(cell(r,['來源','取得方式','source'])||'購入').trim();let loc1=String(cell(r,['主要地點','地點','位置一','location1','location'])||'未設定').trim(),loc2=String(cell(r,['區域','位置二','location2'])||'未設定區域').trim(),loc3=String(cell(r,['具體位置','位置三','location3'])||'未設定位置').trim();const combined=String(cell(r,['目前位置','完整位置'])||'').trim();if(combined){const a=combined.split(/\s*[＞>\/｜|]\s*/);loc1=a[0]||loc1;loc2=a[1]||loc2;loc3=a[2]||loc3}const purchaseDate=excelDate(cell(r,['購入日期','購買日期','建立日期','purchaseDate']));let days=Number(cell(r,['持有天數','天數','days']))||0;if(!days&&purchaseDate){const d=diffDays(purchaseDate,TODAY);days=d===null?0:Math.max(0,d)}return {id,name,variety:String(cell(r,['品種','學名','variety'])||'未設定').trim(),source,price:source==='自行繁殖'?0:Math.max(0,Number(cell(r,['原始購入價格','購入價格','購買價格','價格','price']))||0),expectedPrice:Math.max(0,Number(cell(r,['預計出售價格','預售價格','expectedPrice']))||0),actualPrice:Math.max(0,Number(cell(r,['實際出售價格','售價','actualPrice']))||0),status:String(cell(r,['狀態','status'])||'持有').trim(),loc:[loc1,loc2,loc3],pot:String(cell(r,['盆器','盆徑','花盆','pot'])||'未設定').trim(),days,mother:String(cell(r,['母株','母株編號','mother'])||'').trim()||null,risk:/^(1|true|是|有|高)$/i.test(String(cell(r,['高風險','風險','risk']))),waterEvery:Math.max(1,Number(cell(r,['澆水週期','幾天澆水一次','waterEvery']))||4),fertEvery:Math.max(1,Number(cell(r,['施肥週期','幾天施肥一次','fertEvery']))||14),lastWater:excelDate(cell(r,['上次澆水','最後澆水','lastWater']))||TODAY,lastFert:excelDate(cell(r,['上次施肥','最後施肥','lastFert']))||TODAY,purchaseDate,seller:String(cell(r,['賣家','購買來源','seller'])||'').trim(),notes:String(cell(r,['備註','notes'])||'').trim()}}
+async function readExcelPreview(){const file=$('#excelFile').files?.[0];if(!file)return toast('請先選擇 Excel 或 CSV');if(!window.XLSX){$('#importStatus').textContent='❌ Excel 元件載入失敗，請確認網路後重新整理。';return}try{const buf=await file.arrayBuffer(),wb=XLSX.read(buf,{type:'array',cellDates:false}),ws=wb.Sheets[wb.SheetNames[0]],raw=XLSX.utils.sheet_to_json(ws,{defval:''});importRows=raw.map(normalizeImportedRow).filter(Boolean);$('#previewCount').textContent=`${importRows.length} 筆`;$('#importStatus').innerHTML=`✅ 已讀取 <b>${esc(file.name)}</b>，共 ${importRows.length} 筆有效植物資料。`;const rows=importRows.slice(0,12);$('#excelPreview').innerHTML=rows.length?`<table class="preview-table"><thead><tr><th>ID</th><th>名稱</th><th>品種</th><th>狀態</th><th>位置</th><th>價格</th></tr></thead><tbody>${rows.map(p=>`<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.variety)}</td><td>${esc(p.status)}</td><td>${esc(p.loc.join('＞'))}</td><td>${p.price}</td></tr>`).join('')}</tbody></table>${importRows.length>12?`<div class="muted" style="margin-top:8px">僅預覽前 12 筆；匯入時會處理全部 ${importRows.length} 筆。</div>`:''}`:'<div class="notice warn">沒有找到有效資料。至少需要「名稱」或「植物編號」。</div>';$('#confirmExcel').disabled=!importRows.length}catch(err){console.error(err);$('#importStatus').textContent='❌ 讀取失敗：'+err.message}}
+$('#previewExcel')?.addEventListener('click',readExcelPreview);
+$('#confirmExcel')?.addEventListener('click',()=>{if(!importRows.length)return;const mode=$('#importMode').value;let added=0,updated=0;if(mode==='replace'){plants=importRows.map(clone);added=plants.length}else{for(const p of importRows){const i=plants.findIndex(x=>x.id===p.id);if(i>=0){plants[i]={...plants[i],...p};updated++}else{plants.push(p);added++}}}selected=plants[0]?.id||null;renderAll();$('#importStatus').innerHTML=`✅ 匯入完成：新增 <b>${added}</b> 筆、更新 <b>${updated}</b> 筆，目前共 <b>${plants.length}</b> 株。`;toast('Excel 資料已更新到植物清單')});
+$('#exportExcel')?.addEventListener('click',()=>{if(!window.XLSX)return toast('Excel 元件尚未載入');const rows=plants.map(p=>({'植物編號':p.id,'名稱':p.name,'品種':p.variety,'來源':p.source,'原始購入價格':p.price,'狀態':p.status,'主要地點':p.loc?.[0]||'','區域':p.loc?.[1]||'','具體位置':p.loc?.[2]||'','盆器':p.pot,'母株':p.mother||'','澆水週期':p.waterEvery,'施肥週期':p.fertEvery,'上次澆水':p.lastWater,'上次施肥':p.lastFert}));const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'植物資料');XLSX.writeFile(wb,`植物資料_${TODAY}.xlsx`)});
+$('#resetDemo')?.addEventListener('click',()=>{if(!confirm('確定要清除目前瀏覽器資料並恢復示範資料嗎？'))return;plants=clone(DEFAULT_PLANTS);logs=clone(DEFAULT_LOGS);chatHistory=[];scanned=null;selected=plants[0].id;renderAll();toast('已恢復示範資料')});
+
+// ---------- QR generation / scanning ----------
+function qrPayload(id){const base=location.origin+location.pathname;return `${base}?plant=${encodeURIComponent(id)}`}
+function generateQrFor(id){const p=plants.find(x=>x.id===id);if(!p)return;const box=$('#generatedQr');box.innerHTML='';const payload=qrPayload(p.id);if(window.QRCode){new QRCode(box,{text:payload,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});$('#generatedQrLink').textContent=payload;$('#downloadQrBtn').disabled=false;scanned=p.id;renderAIContext();saveState()}else{$('#generatedQrLink').textContent='QR 產生元件載入失敗，請重新整理頁面。'}}
+$('#generateQrBtn')?.addEventListener('click',()=>generateQrFor($('#qrSelect').value));
+$('#downloadQrBtn')?.addEventListener('click',()=>{const img=$('#generatedQr img'),canvas=$('#generatedQr canvas');const url=img?.src||canvas?.toDataURL('image/png');if(!url)return toast('請先產生 QR');const a=document.createElement('a');a.href=url;a.download=`${($('#qrSelect').value||'plant').replace(/\s+/g,'_')}_QR.png`;a.click()});
+function identifyQrText(text){let id='';try{const u=new URL(text);id=u.searchParams.get('plant')||''}catch{id=String(text||'').trim()}const p=plants.find(x=>x.id===id)||plants.find(x=>id.includes(x.id));if(!p){$('#scanResult').innerHTML=`⚠️ QR 已讀到，但找不到對應植物：<b>${esc(id||text)}</b>`;return false}scanned=p.id;selected=p.id;$('#qrSelect').value=p.id;$('#scanResult').innerHTML=`✅ 已掃描：<b>${esc(p.id)}</b><br><span class="muted">📍 ${esc((p.loc||[]).join(' ＞ '))} · 🪴 ${esc(p.pot)}</span>`;renderAIContext();saveState();toast('QR 已辨識 '+p.id);return true}
+let qrScanner=null,qrRunning=false;
+$('#startScanBtn')?.addEventListener('click',async()=>{if(!window.Html5Qrcode){$('#scanResult').textContent='❌ QR 掃描元件載入失敗，請重新整理。';return}try{if(qrRunning)return;qrScanner=qrScanner||new Html5Qrcode('qrReader');await qrScanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},async decoded=>{if(identifyQrText(decoded)){try{await qrScanner.stop()}catch{}qrRunning=false;$('#startScanBtn').disabled=false;$('#stopScanBtn').disabled=true}},()=>{});qrRunning=true;$('#startScanBtn').disabled=true;$('#stopScanBtn').disabled=false;$('#scanResult').textContent='📷 相機已啟動，請將 QR 對準框內。'}catch(err){console.error(err);$('#scanResult').textContent='❌ 無法啟動相機：請允許相機權限，並使用 HTTPS 的 Chrome / Edge / Safari。'}});
+$('#stopScanBtn')?.addEventListener('click',async()=>{if(qrScanner&&qrRunning){try{await qrScanner.stop()}catch{}qrRunning=false;$('#startScanBtn').disabled=false;$('#stopScanBtn').disabled=true;$('#scanResult').textContent='已停止相機掃描。'}});
+$('#scanImageBtn')?.addEventListener('click',async()=>{const file=$('#qrImageFile').files?.[0];if(!file)return toast('請先選一張 QR 圖片');if(!window.Html5Qrcode)return toast('QR 元件尚未載入');try{const scanner=new Html5Qrcode('qrReader');const decoded=await scanner.scanFile(file,true);identifyQrText(decoded);try{scanner.clear()}catch{}}catch(err){console.error(err);$('#scanResult').textContent='❌ 圖片中沒有辨識到 QR Code。'}});
+$('#simulateScanBtn')?.addEventListener('click',()=>identifyQrText($('#qrSelect').value));
+function applyQrFromUrl(){const id=new URLSearchParams(location.search).get('plant');if(id&&plants.some(p=>p.id===id)){identifyQrText(id);show('qr')}}
+
+// ---------- Gemini chat ----------
+function renderChat(){const box=$('#chatMessages');if(!box)return;if(!chatHistory.length){box.innerHTML='<div class="notice seed">👋 你可以問我：「皇冠 #018 最近需要澆水嗎？」、「家裡有幾株皇冠？」或掃 QR 後問「這株目前在哪裡？」</div>';return}box.innerHTML=chatHistory.map(m=>`<div class="chat-msg ${m.role==='user'?'user':'ai'}"><div><div class="chat-bubble">${esc(m.text)}</div><div class="chat-meta">${m.role==='user'?'你':'Gemini 植物管家'}</div></div></div>`).join('');box.scrollTop=box.scrollHeight}
+async function checkGemini(){try{const r=await fetch('/api/health');const j=await r.json();if(j.gemini){$('#geminiStatus').innerHTML='<span class="status-dot ok"></span>Gemini 已連線，可以實際對話。'}else{$('#geminiStatus').innerHTML='<span class="status-dot warn"></span>網站已上線，但尚未設定 GEMINI_API_KEY。'}}catch{$('#geminiStatus').innerHTML='<span class="status-dot bad"></span>目前是純前端預覽；部署 Web Service 後即可連接 Gemini。'}}
+function compactPlantData(){return plants.map(p=>({id:p.id,name:p.name,variety:p.variety,status:p.status,source:p.source,price:p.price,location:(p.loc||[]).join(' > '),pot:p.pot,mother:p.mother,waterEvery:p.waterEvery,fertEvery:p.fertEvery,lastWater:p.lastWater,lastFert:p.lastFert,risk:p.risk}))}
+$('#geminiChatForm')?.addEventListener('submit',async e=>{e.preventDefault();const input=$('#geminiInput'),text=input.value.trim();if(!text)return;chatHistory.push({role:'user',text});input.value='';renderChat();$('#sendGemini').disabled=true;$('#sendGemini').textContent='思考中…';try{const r=await fetch('/api/gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,scannedPlantId:scanned,plants:compactPlantData(),recentLogs:logs.slice(0,30),history:chatHistory.slice(-10,-1)})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Gemini API 錯誤');chatHistory.push({role:'assistant',text:j.text||'沒有收到回覆'});saveState();renderChat()}catch(err){chatHistory.push({role:'assistant',text:'目前無法連線 Gemini：'+err.message});renderChat()}finally{$('#sendGemini').disabled=false;$('#sendGemini').textContent='➤ 傳送'}});
+$('#clearChat')?.addEventListener('click',()=>{chatHistory=[];saveState();renderChat()});
+function setupVoiceButton(buttonId,textareaId,statusId){const btn=$('#'+buttonId),input=$('#'+textareaId),status=$('#'+statusId),SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!btn||!input||!status)return;if(!SR){btn.disabled=true;btn.textContent='🎙️ 此瀏覽器不支援語音';status.textContent='請改用 Chrome / Edge 或直接文字輸入';return}const rec=new SR();rec.lang='zh-TW';rec.interimResults=true;rec.continuous=false;let listening=false,finalText='';btn.addEventListener('click',()=>{if(listening)return rec.stop();finalText='';try{rec.start()}catch{}});rec.onstart=()=>{listening=true;btn.classList.add('listening');btn.textContent='⏹️ 點一下停止';status.textContent='正在聽你說話…'};rec.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t;else interim+=t}input.value=(finalText||interim).trim()};rec.onerror=e=>{status.textContent=e.error==='not-allowed'?'請允許麥克風權限':'語音辨識失敗：'+e.error};rec.onend=()=>{listening=false;btn.classList.remove('listening');btn.textContent='🎙️ 點一下開始說話';status.textContent=input.value.trim()?'✅ 已轉成文字':'可用中文直接詢問'}}
+setupVoiceButton('geminiMic','geminiInput','geminiVoiceStatus');setupVoiceButton('micBtn2','aiText2','voiceStatus2');
+function parseAI(text,output){let plant=scanned;if(!plant){const hit=plants.find(p=>text.includes(p.id)||text.includes(p.id.replace(' #','')));if(hit)plant=hit.id}if(!plant){output.classList.remove('hidden');output.textContent='⚠️ 無法確認是哪一株植物，請先掃 QR 或輸入完整編號。';return}let action='紀錄';if(/澆水/.test(text))action='澆水';else if(/施肥/.test(text))action='施肥';else if(/換.*盆|吋盆/.test(text))action='換盆';else if(/移到|移動/.test(text))action='移動';else if(/死|死亡/.test(text))action='死亡';else if(/分株|側芽|繁殖/.test(text))action='繁殖';const pot=(text.match(/(\d+)\s*吋/)||[])[1];pending={plant,action,text,pot};output.classList.remove('hidden');output.innerHTML=`<b>✨ 解析結果</b><div style="margin-top:8px">🌿 植物：<b>${esc(plant)}</b></div><div>⚙️ 操作：<b>${action}</b></div>${pot?`<div>🪴 新盆器：<b>${pot}吋</b></div>`:''}<div>📅 日期：<b>今天</b></div><div class="actions" style="grid-template-columns:1fr 1fr"><button class="btn primary confirmAI" type="button">✅ 確認寫入</button><button class="btn cancelAI" type="button">取消</button></div>`;output.querySelector('.confirmAI').addEventListener('click',()=>{const p=plants.find(x=>x.id===pending.plant);if(!p)return;if(pending.action==='換盆'&&pending.pot)p.pot=pending.pot+'吋';if(pending.action==='死亡')p.status='已死亡';if(pending.action==='澆水')p.lastWater=TODAY;if(pending.action==='施肥')p.lastFert=TODAY;logs.unshift({plant:p.id,action:pending.action,note:pending.text,date:'今天'});pending=null;output.innerHTML='✅ 已確認並完成紀錄。';renderAll()});output.querySelector('.cancelAI').addEventListener('click',()=>{output.classList.add('hidden');pending=null})}
+$('#aiForm2')?.addEventListener('submit',e=>{e.preventDefault();const t=$('#aiText2').value.trim();if(!t)return toast('請輸入指令');parseAI(t,$('#aiResult2'))});
+
+renderAll();checkGemini();applyQrFromUrl();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "plant-management-gemini-v4",
+  "version": "4.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
